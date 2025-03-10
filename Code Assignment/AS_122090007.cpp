@@ -3,26 +3,25 @@
 //
 #include <iostream>
 #include <vector>
-#include <cctype>
-#include <string>
 #include <queue>
 #include <unordered_set>
-#include <cmath>
-#include <sstream>
 using namespace std;
 
-vector<vector<int>> get_board(string input) {
+vector<vector<int>> get_board() {
+    string input;
+    getline(cin, input);
+
     vector<vector<int>> board(2, vector<int>());
-    int count = 0;
+    int column = 0;
     int row = 0;
 
     for (char i: input) {
         if (isdigit(i)) {
-            if (count == 3) {
+            if (column == 3) {
                 row++;
             }
             board[row].push_back(i - '0');
-            count++;
+            column++;
         }
     }
     return board;
@@ -30,30 +29,22 @@ vector<vector<int>> get_board(string input) {
 
 int manhattan(vector<vector<int>> board) {
     int dist = 0;
-
-    int goal_row[6] = {0, 0, 0, 1, 1, 1};
-    int goal_col[6] = {0, 1, 2, 0, 1, 2};
+    vector<pair<int, int>> goal_board = {{0, 0}, {0, 1}, {0, 2}, {1, 0}, {1, 1}, {1, 2}};
 
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 3; j++) {
-            int num = board[i][j];
-            if (num != 0) {
-                int target_row = goal_row[num - 1];
-                int target_col = goal_col[num - 1];
-
-                dist += ((i - target_row) > 0 ? (i - target_row) : (target_row - i))
-                        + ((j - target_col) > 0 ? (j - target_col) : (target_col - j));
+            if (board[i][j] != 0) {
+                dist += abs(i - goal_board[board[i][j]].first) + abs(j - goal_board[board[i][j]].second);
             }
         }
     }
+
     return dist;
 }
 
-
-
 struct State {
     vector<vector<int>> board;
-    int zero_row, zero_col;
+    int empty_x, empty_y;
     int g;
     int h;
     string path;
@@ -63,28 +54,40 @@ struct State {
     }
 };
 
-vector<State> get_neighbors(State s) {
-    vector<State> neighbors;
-    vector<pair<int, int>> dirs = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}};
-    vector<char> dir_names = {'l', 'r', 'u', 'd'};
+vector<State> get_next_state(State current_state) {
+    vector<State> next_state;
+    vector<char> direction = {'l', 'r', 'u', 'd'};
+    vector<pair<int, int>> direction_xy = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}};
 
-    for (int i = 0; i < 4; ++i) {
-        int new_row = s.zero_row + dirs[i].first;
-        int new_col = s.zero_col + dirs[i].second;
+    int empty_x, empty_y;
 
-        if (new_row >= 0 && new_row < 2 && new_col >= 0 && new_col < 3) {
-            State new_state = s;
-            swap(new_state.board[s.zero_row][s.zero_col],
-                 new_state.board[new_row][new_col]);
-            new_state.zero_row = new_row;
-            new_state.zero_col = new_col;
-            new_state.g += 1;
-            new_state.h = manhattan(new_state.board);
-            new_state.path += dir_names[i];
-            neighbors.push_back(new_state);
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 3; j++) {
+            if (current_state.board[i][j] == 0) {
+                empty_x = j;
+                empty_y = i;
+                break;
+            }
         }
     }
-    return neighbors;
+
+    for (int i = 0; i < 4; i++) {
+        int new_row = current_state.empty_y + direction_xy[i].first;
+        int new_col = current_state.empty_x + direction_xy[i].second;
+
+        if (new_row >= 0 && new_row < 2 && new_col >= 0 && new_col < 3) {
+            State new_state = current_state;
+            swap(new_state.board[current_state.empty_y][current_state.empty_x],
+                 new_state.board[new_row][new_col]);
+            new_state.empty_y = new_row;
+            new_state.empty_x = new_col;
+            new_state.g += 1;
+            new_state.h = manhattan(new_state.board);
+            new_state.path += direction[i];
+            next_state.push_back(new_state);
+        }
+    }
+    return next_state;
 }
 
 string solve_puzzle(vector<vector<int>> board) {
@@ -102,8 +105,8 @@ string solve_puzzle(vector<vector<int>> board) {
     for (int i = 0; i < 2; ++i) {
         for (int j = 0; j < 3; ++j) {
             if (board[i][j] == 0) {
-                start.zero_row = i;
-                start.zero_col = j;
+                start.empty_y = i;
+                start.empty_x = j;
             }
         }
     }
@@ -127,7 +130,7 @@ string solve_puzzle(vector<vector<int>> board) {
             return current.path;
         }
 
-        for (auto neighbor : get_neighbors(current)) {
+        for (auto neighbor : get_next_state(current)) {
             string state_str = state_to_str(neighbor.board);
             if (visited.find(state_str) == visited.end()) {
                 visited.insert(state_str);
@@ -142,15 +145,8 @@ string solve_puzzle(vector<vector<int>> board) {
 }
 
 int main() {
-    vector<string> source_v;
-    string input;
 
-    while (cin) {
-        getline(cin, input);
-        source_v.push_back(input);
-    }
-
-    vector<vector<int>> board = get_board(source_v[0]);
+    vector<vector<int>> board = get_board();
     string result = solve_puzzle(board);
 
     if (result == "None")
@@ -170,5 +166,4 @@ int main() {
 //        }
 //        cout << endl;
 //    }
-    system("pause");
 }
