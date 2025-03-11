@@ -5,6 +5,8 @@
 #include <vector>
 #include <queue>
 #include <unordered_set>
+//#include <algorithm>
+#include <unordered_map>
 using namespace std;
 
 vector<vector<int>> get_board() {
@@ -46,6 +48,7 @@ struct State {
     vector<vector<int>> board;
     double g;
     double h;
+    double f;
     vector<char> path;
 
     char get_priority(char i) const {
@@ -54,9 +57,9 @@ struct State {
                 case 'l':
                     return 'a';
                 case 'u':
-                    return 'b';
-                case 'r':
                     return 'c';
+                case 'r':
+                    return 'b';
                 case 'd':
                     return 'd';
             }
@@ -64,7 +67,7 @@ struct State {
     }
 
     bool operator>(const State& other_state) const {
-        if (g + h == other_state.g + other_state.h) {
+        if (f == other_state.f) {
             string path1, path2;
             for (auto i: path) {
                 path1 += get_priority(i);
@@ -74,7 +77,7 @@ struct State {
             }
             return path1 > path2;
         } else {
-            return (g + h) > (other_state.g + other_state.h);
+            return f > other_state.f;
         }
     }
 };
@@ -106,6 +109,7 @@ vector<State> get_next_state(State current_state) {
             new_state.board[new_y][new_x] = 0;
             new_state.g += 1;
             new_state.h = manhattan(new_state.board);
+            new_state.f = new_state.g + new_state.h;
             new_state.path.push_back(direction[i]);
             next_state.push_back(new_state);
         }
@@ -117,13 +121,14 @@ string solve_puzzle(vector<vector<int>> board) {
     vector<vector<int>> goal = {{1, 2, 3}, {4, 5, 0}};
 
     priority_queue<State, vector<State>, greater<State>> pq;
-    unordered_set<string> visited;
+    unordered_map<string, double> visited;
 
     State start;
     start.board = board;
     start.g = 0;
     start.h = manhattan(board);
     start.path = vector<char>();
+    start.f = start.g + start.h;
 
     auto state_to_str = [](vector<vector<int>> board) {
         string s;
@@ -134,7 +139,7 @@ string solve_puzzle(vector<vector<int>> board) {
     };
 
     pq.push(start);
-    visited.insert(state_to_str(start.board));
+    visited[state_to_str(start.board)] = start.f;
 
     while (!pq.empty()) {
         State current = pq.top();
@@ -150,34 +155,39 @@ string solve_puzzle(vector<vector<int>> board) {
 
         for (auto neighbor : get_next_state(current)) {
             string state_str = state_to_str(neighbor.board);
-            if (visited.find(state_str) == visited.end()) {
-                visited.insert(state_str);
+            if (visited.find(state_str) == visited.end() || visited[state_str] >= neighbor.f) {
+                visited[state_str] = neighbor.f;
                 pq.push(neighbor);
             }
         }
+
+//        vector<State> temp;
+//        while (!pq.empty()) {
+//            temp.push_back(pq.top());
+//            pq.pop();
+//        }
+//        sort(temp.begin(), temp.end(), [](const State& a, const State& b) {
+//            return a.f < b.f;
+//        });
+//        for (const auto& state : temp) {
+//            pq.push(state);
+//        }
     }
 
     return "None";
-
-
 }
 
 int main() {
-
     vector<vector<int>> board = get_board();
-    string result = solve_puzzle(board);
+    string moving = solve_puzzle(board);
+    int steps;
 
-    if (result == "None")
-        cout << -1 << endl;
+    if (moving == "None")
+        steps = -1;
     else {
-        cout << result.length() << endl;
+        steps = moving.length();
     }
-//    cout << result;
 
-//    for (const vector<int>& row: board) {
-//        for (int a: row) {
-//            cout << a;
-//        }
-//        cout << endl;
-//    }
+    cout << steps << endl;
+    cout << moving << endl;
 }
