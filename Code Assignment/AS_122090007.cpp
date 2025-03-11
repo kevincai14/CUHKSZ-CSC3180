@@ -34,7 +34,7 @@ int manhattan(vector<vector<int>> board) {
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 3; j++) {
             if (board[i][j] != 0) {
-                dist += abs(i - goal_board[board[i][j]].first) + abs(j - goal_board[board[i][j]].second);
+                dist += abs(i - goal_board[board[i][j] - 1].first) + abs(j - goal_board[board[i][j] - 1].second);
             }
         }
     }
@@ -170,7 +170,7 @@ int main() {
     else {
         cout << result.length() << endl;
     }
-    cout << result;
+//    cout << result;
 
 //    cout << manhattan(board);
 
