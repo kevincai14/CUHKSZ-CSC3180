@@ -44,20 +44,43 @@ int manhattan(vector<vector<int>> board) {
 
 struct State {
     vector<vector<int>> board;
-    int empty_x, empty_y;
-    int g;
-    int h;
-    string path;
+    double g;
+    double h;
+    vector<char> path;
 
-    bool operator>(State other) const {
-        return (g + h) > (other.g + other.h);
+    double get_priority() const {
+        if (!path.empty()) {
+            switch (path.back()) {
+                case 'l':
+                    return 0.1;
+                case 'u':
+                    return 0.2;
+                case 'r':
+                    return 0.3;
+                case 'd':
+                    return 0.4;
+//                case 'l':
+//                    return 0.4;
+//                case 'u':
+//                    return 0.3;
+//                case 'r':
+//                    return 0.2;
+//                case 'd':
+//                    return 0.1;
+            }
+        }
+        return 0;
+    }
+
+    bool operator>(const State& other_state) const {
+        return (g + h + get_priority()) > (other_state.g + other_state.h + other_state.get_priority());
     }
 };
 
 vector<State> get_next_state(State current_state) {
     vector<State> next_state;
-    vector<char> direction = {'l', 'r', 'u', 'd'};
-    vector<pair<int, int>> direction_xy = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}};
+    vector<char> direction = {'l', 'u', 'r', 'd'};
+    vector<pair<int, int>> direction_xy = {{0, -1}, {-1, 0}, {0, 1}, {1, 0}};
 
     int empty_x, empty_y;
 
@@ -72,18 +95,16 @@ vector<State> get_next_state(State current_state) {
     }
 
     for (int i = 0; i < 4; i++) {
-        int new_row = current_state.empty_y + direction_xy[i].first;
-        int new_col = current_state.empty_x + direction_xy[i].second;
+        int new_x = empty_x + direction_xy[i].second;
+        int new_y = empty_y + direction_xy[i].first;
 
-        if (new_row >= 0 && new_row < 2 && new_col >= 0 && new_col < 3) {
+        if (new_y >= 0 and new_y <= 1 and new_x >= 0 and new_x <= 2) {
             State new_state = current_state;
-            swap(new_state.board[current_state.empty_y][current_state.empty_x],
-                 new_state.board[new_row][new_col]);
-            new_state.empty_y = new_row;
-            new_state.empty_x = new_col;
+            new_state.board[empty_y][empty_x] = new_state.board[new_y][new_x];
+            new_state.board[new_y][new_x] = 0;
             new_state.g += 1;
             new_state.h = manhattan(new_state.board);
-            new_state.path += direction[i];
+            new_state.path.push_back(direction[i]);
             next_state.push_back(new_state);
         }
     }
@@ -100,16 +121,7 @@ string solve_puzzle(vector<vector<int>> board) {
     start.board = board;
     start.g = 0;
     start.h = manhattan(board);
-    start.path = "";
-
-    for (int i = 0; i < 2; ++i) {
-        for (int j = 0; j < 3; ++j) {
-            if (board[i][j] == 0) {
-                start.empty_y = i;
-                start.empty_x = j;
-            }
-        }
-    }
+    start.path = vector<char>();
 
     auto state_to_str = [](vector<vector<int>> board) {
         string s;
@@ -127,7 +139,11 @@ string solve_puzzle(vector<vector<int>> board) {
         pq.pop();
 
         if (current.board == goal) {
-            return current.path;
+            string result;
+            for (char i: current.path) {
+                result += i;
+            }
+            return result;
         }
 
         for (auto neighbor : get_next_state(current)) {
