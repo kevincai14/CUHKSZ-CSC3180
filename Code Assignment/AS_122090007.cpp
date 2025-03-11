@@ -48,32 +48,34 @@ struct State {
     double h;
     vector<char> path;
 
-    double get_priority() const {
+    char get_priority(char i) const {
         if (!path.empty()) {
-            switch (path.back()) {
+            switch (i) {
                 case 'l':
-                    return 0.1;
+                    return 'a';
                 case 'u':
-                    return 0.2;
+                    return 'b';
                 case 'r':
-                    return 0.3;
+                    return 'c';
                 case 'd':
-                    return 0.4;
-//                case 'l':
-//                    return 0.4;
-//                case 'u':
-//                    return 0.3;
-//                case 'r':
-//                    return 0.2;
-//                case 'd':
-//                    return 0.1;
+                    return 'd';
             }
         }
-        return 0;
     }
 
     bool operator>(const State& other_state) const {
-        return (g + h + get_priority()) > (other_state.g + other_state.h + other_state.get_priority());
+        if (g + h == other_state.g + other_state.h) {
+            string path1, path2;
+            for (auto i: path) {
+                path1 += get_priority(i);
+            }
+            for (auto i: other_state.path) {
+                path2 += get_priority(i);
+            }
+            return path1 > path2;
+        } else {
+            return (g + h) > (other_state.g + other_state.h);
+        }
     }
 };
 
@@ -171,10 +173,6 @@ int main() {
         cout << result.length() << endl;
     }
 //    cout << result;
-
-//    cout << manhattan(board);
-
-
 
 //    for (const vector<int>& row: board) {
 //        for (int a: row) {
