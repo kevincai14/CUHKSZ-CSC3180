@@ -114,6 +114,16 @@ vector<State> get_next_state(State current_state) {
     return next_state;
 }
 
+string board_to_str(vector<vector<int>> board) {
+    string s;
+    for (auto row : board) {
+        for (int num : row) {
+            s += to_string(num);
+        }
+    }
+    return s;
+}
+
 string solve_puzzle(vector<vector<int>> board) {
     vector<vector<int>> goal = {{1, 2, 3}, {4, 5, 0}};
 
@@ -126,16 +136,8 @@ string solve_puzzle(vector<vector<int>> board) {
     start.h = manhattan(board);
     start.path = vector<char>();
 
-    auto state_to_str = [](vector<vector<int>> board) {
-        string s;
-        for (auto row : board)
-            for (int num : row)
-                s += to_string(num);
-        return s;
-    };
-
     pq.push(start);
-    visited[state_to_str(start.board)] = start.g + start.h;
+    visited[board_to_str(start.board)] = start.g + start.h;
 
     while (!pq.empty()) {
         State current = pq.top();
@@ -150,7 +152,7 @@ string solve_puzzle(vector<vector<int>> board) {
         }
 
         for (auto neighbor : get_next_state(current)) {
-            string state_str = state_to_str(neighbor.board);
+            string state_str = board_to_str(neighbor.board);
             if (visited.find(state_str) == visited.end() or visited[state_str] > neighbor.g + neighbor.h) {
                 visited[state_str] = neighbor.g + neighbor.h;
                 pq.push(neighbor);
@@ -173,5 +175,5 @@ int main() {
     }
 
     cout << steps << endl;
-//    cout << moving << endl;
+    cout << moving << endl;
 }
