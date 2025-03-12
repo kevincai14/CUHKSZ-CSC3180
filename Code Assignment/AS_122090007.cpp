@@ -4,7 +4,6 @@
 #include <iostream>
 #include <vector>
 #include <queue>
-#include <unordered_set>
 #include <unordered_map>
 using namespace std;
 
@@ -137,8 +136,7 @@ string solve_puzzle(vector<vector<int>> board) {
     start.path = vector<char>();
 
     pq.push(start);
-    visited[board_to_str(start.board)] = start.g + start.h;
-
+    visited[board_to_str(start.board)] = start.g;
     while (!pq.empty()) {
         State current = pq.top();
         pq.pop();
@@ -153,8 +151,8 @@ string solve_puzzle(vector<vector<int>> board) {
 
         for (auto neighbor : get_next_state(current)) {
             string state_str = board_to_str(neighbor.board);
-            if (visited.find(state_str) == visited.end() or visited[state_str] > neighbor.g + neighbor.h) {
-                visited[state_str] = neighbor.g + neighbor.h;
+            if (visited.find(state_str) == visited.end() or neighbor.g < visited[state_str]) {
+                visited[state_str] = neighbor.g;
                 pq.push(neighbor);
             }
         }
