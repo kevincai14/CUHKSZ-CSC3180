@@ -151,7 +151,7 @@ string solve_puzzle(vector<vector<int>> board) {
 
         for (auto neighbor : get_next_state(current)) {
             string state_str = board_to_str(neighbor.board);
-            if (visited.find(state_str) == visited.end() or neighbor.g < visited[state_str]) {
+            if (visited.find(state_str) == visited.end() or visited[state_str] > neighbor.g) {
                 visited[state_str] = neighbor.g;
                 pq.push(neighbor);
             }
