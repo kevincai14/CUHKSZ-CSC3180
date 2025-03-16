@@ -47,6 +47,7 @@ struct State {
     double g;
     double h;
     vector<char> path;
+    int timestamp;
 
     char get_priority(char i) const {
         if (!path.empty()) {
@@ -65,14 +66,18 @@ struct State {
 
     bool operator<(const State& other_state) const {
         if (g + h == other_state.g + other_state.h) {
-            string path1, path2;
-            for (auto i: path) {
-                path1 += get_priority(i);
+            if (timestamp == other_state.timestamp) {
+                string path1, path2;
+                for (auto i: path) {
+                    path1 += get_priority(i);
+                }
+                for (auto i: other_state.path) {
+                    path2 += get_priority(i);
+                }
+                return path1 > path2;
+            } else {
+                return timestamp > other_state.timestamp;
             }
-            for (auto i: other_state.path) {
-                path2 += get_priority(i);
-            }
-            return path1 > path2;
         } else {
             return (g + h) > (other_state.g + other_state.h);
         }
@@ -124,35 +129,35 @@ string board_to_str(vector<vector<int>> board) {
 }
 
 string solve_puzzle(vector<vector<int>> board) {
-    vector<vector<int>> goal = {{1, 2, 3}, {4, 5, 0}};
+    vector<vector<int>> goal = { {1, 2, 3}, {4, 5, 0} };
 
     priority_queue<State> pq;
     unordered_map<string, double> visited;
+    int timestamp_counter = 0;
 
     State start;
     start.board = board;
     start.g = 0;
     start.h = manhattan(board);
     start.path = vector<char>();
-
+    start.timestamp = timestamp_counter++;
     pq.push(start);
     visited[board_to_str(start.board)] = start.g;
+
     while (!pq.empty()) {
         State current = pq.top();
         pq.pop();
 
         if (current.board == goal) {
-            string result;
-            for (char i: current.path) {
-                result += i;
-            }
-            return result;
+            return string(current.path.begin(), current.path.end());
         }
 
-        for (auto neighbor : get_next_state(current)) {
+        vector<State> neighbors = get_next_state(current);
+        for (State& neighbor : neighbors) {
             string state_str = board_to_str(neighbor.board);
-            if (visited.find(state_str) == visited.end() or visited[state_str] > neighbor.g) {
+            if (visited.find(state_str) == visited.end() || neighbor.g < visited[state_str]) {
                 visited[state_str] = neighbor.g;
+                neighbor.timestamp = timestamp_counter++;
                 pq.push(neighbor);
             }
         }
