@@ -11,12 +11,6 @@
   <component name="ChangeListManager">
     <list default="true" id="74b3ffa1-c22b-492c-810b-ec0d42c671ee" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Group Project/3002example/navigation_with_txt_new.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Group Project/3002example/navigation_with_txt_new.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Group Project/edges_longgang.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Group Project/edge_py_data.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Group Project/nodes_longgang.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Group Project/node_py_data.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Group Project/python_RL_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/Group Project/python_RL_test.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/edges_longgang.txt" beforeDir="false" afterPath="$PROJECT_DIR$/edge_cpp_data.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/nodes_longgang.txt" beforeDir="false" afterPath="$PROJECT_DIR$/node_cpp_data.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -111,7 +105,7 @@
       <workItem from="1744795132037" duration="101000" />
       <workItem from="1744799876012" duration="622000" />
       <workItem from="1744805568826" duration="39000" />
-      <workItem from="1744805628988" duration="407000" />
+      <workItem from="1744805628988" duration="563000" />
     </task>
     <servers />
   </component>
