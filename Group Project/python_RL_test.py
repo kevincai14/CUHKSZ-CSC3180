@@ -90,8 +90,8 @@ def extract_path(Q, start, goal):
 
 # 主程序
 if __name__ == "__main__":
-    nodes = read_node_data("nodes_longgang.txt")
-    graph = read_edge_data("edges_longgang.txt")
+    nodes = read_node_data("node_py_data.txt")
+    graph = read_edge_data("edge_py_data.txt")
 
     # 显示邻接表
     print("邻接表:")

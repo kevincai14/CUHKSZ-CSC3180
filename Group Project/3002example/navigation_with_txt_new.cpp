@@ -199,8 +199,8 @@ int getValidInput() {
 }
 
 int main() {
-    readNodeData("nodes_longgang.txt");
-    readEdgeData("edges_longgang.txt");
+    readNodeData("node_cpp_data.txt");
+    readEdgeData("edge_cpp_data.txt");
 
     print_map();
 
