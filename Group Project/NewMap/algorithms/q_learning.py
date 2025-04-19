@@ -1,6 +1,12 @@
 import random
 import numpy as np
 
+# Q-learning参数
+alpha = 0.1      # 学习率
+gamma = 0.9      # 折扣因子
+epsilon = 0.3    # 探索率
+episodes = 20000 # 训练次数
+
 def read_node_data(filename):
     nodes = {}
     with open(filename, 'r') as file:
@@ -25,12 +31,6 @@ def read_edge_data(filename):
             graph.setdefault(start, {})[end] = length
             graph.setdefault(end, {})[start] = length
     return graph
-
-# Q-learning参数
-alpha = 0.1      # 学习率
-gamma = 0.9      # 折扣因子
-epsilon = 0.3    # 探索率
-episodes = 20000 # 训练次数
 
 # 初始化 Q 表
 def initialize_Q(graph):
@@ -88,28 +88,10 @@ def extract_path(Q, start, goal):
         state = action
     return path
 
-# 主程序
-if __name__ == "__main__":
-    nodes = read_node_data("node_py_data.txt")
-    graph = read_edge_data("edge_py_data.txt")
+def calculate_path(start, end):
+    nodes = read_node_data("data/node_py_data.txt")         # 注意路径
+    graph = read_edge_data("data/edge_py_data.txt")
 
-    # 显示邻接表
-    # print("邻接表:")
-    # for node, neighbors in graph.items():
-    #     print(f"{node} -> {neighbors}")
-
-    start_node = 3
-    goal_node = 12
-
-
-    Q = q_learning(graph, start_node, goal_node)
-
-    #     # 打印 Q 表
-    # print("\nQ 表：")
-    # for state in sorted(Q.keys()):
-    #     print(f"从节点 {state} 出发：")
-    #     for action in Q[state]:
-    #         print(f"  到 {action} 的 Q 值：{Q[state][action]:.2f}")
-
-    path = extract_path(Q, start_node, goal_node)
-    print(f"\n从节点 {start_node} 到节点 {goal_node} 的路径：{path}")
+    Q = q_learning(graph, start, end)
+    path = extract_path(Q, start, end)
+    return [(nodes[n][1]*100, nodes[n][0]*100) for n in path if n in nodes]  # 转换为界面坐标

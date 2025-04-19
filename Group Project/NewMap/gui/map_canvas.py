@@ -51,16 +51,12 @@ class MapCanvas(QGraphicsView):
 
     def request_path_calculation(self):
         self.click_enabled = False
-        # 坐标转换（根据你的地图实际比例调整）
         start_node = self.convert_to_graph_coord(self.start_point)
         end_node = self.convert_to_graph_coord(self.end_point)
-        
-        # 触发路径计算
-        from algorithms.dijkstra import calculate_path
-        path = calculate_path(start_node, end_node)
-        
-        # 转换回界面坐标
-        path_points = [self.convert_to_ui_coord(n) for n in path]
+
+        # 用 Q-learning 计算路径
+        from algorithms.q_learning import calculate_path
+        path_points = [QPointF(x, y) for (x, y) in calculate_path(start_node, end_node)]
         self.draw_path(path_points)
         self.reset_selection()
 
