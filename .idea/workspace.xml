@@ -10,13 +10,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="74b3ffa1-c22b-492c-810b-ec0d42c671ee" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Group Project/NewMap/algorithms/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Group Project/NewMap/algorithms/q_learning.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Group Project/NewMap/gui/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Group Project/NewMap/algorithms/dijkstra.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Group Project/NewMap/gui/map_canvas.py" beforeDir="false" afterPath="$PROJECT_DIR$/Group Project/NewMap/gui/map_canvas.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Group Project/python_RL_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/Group Project/python_RL_test.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -74,7 +68,7 @@
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
     "git-widget-placeholder": "main",
-    "last_opened_file_path": "C:/Users/Quan/GitHub/CUHKSZ-CSC3180/Group Project/NewMap/gui",
+    "last_opened_file_path": "C:/Users/Quan/GitHub/CUHKSZ-CSC3180",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -150,6 +144,8 @@
       <workItem from="1744879450214" duration="2260000" />
       <workItem from="1744953768832" duration="4228000" />
       <workItem from="1745057960433" duration="2869000" />
+      <workItem from="1745068188035" duration="2152000" />
+      <workItem from="1745077178378" duration="433000" />
     </task>
     <servers />
   </component>
@@ -159,7 +155,7 @@
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/CUHKSZ_CSC3180$python_RL_test.coverage" NAME="python_RL_test Coverage Results" MODIFIED="1745067389125" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Group Project" />
     <SUITE FILE_PATH="coverage/CUHKSZ_CSC3180$map_test.coverage" NAME="map_test Coverage Results" MODIFIED="1744365809028" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Group Project" />
-    <SUITE FILE_PATH="coverage/CUHKSZ_CSC3180$main.coverage" NAME="main Coverage Results" MODIFIED="1745068006769" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Group Project/NewMap" />
+    <SUITE FILE_PATH="coverage/CUHKSZ_CSC3180$main.coverage" NAME="main Coverage Results" MODIFIED="1745077190615" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Group Project/Map3180" />
     <SUITE FILE_PATH="coverage/CUHKSZ_CSC3180$map_canvas.coverage" NAME="map_canvas Coverage Results" MODIFIED="1745067935549" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Group Project/NewMap/gui" />
     <SUITE FILE_PATH="coverage/CUHKSZ_CSC3180$test.coverage" NAME="test Coverage Results" MODIFIED="1744805395821" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Group Project" />
   </component>
