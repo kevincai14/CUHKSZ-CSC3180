@@ -45,6 +45,7 @@ class MapCanvas(QGraphicsView):
         # 设置交互属性
         self.setMouseTracking(True)
         self.setDragMode(QGraphicsView.ScrollHandDrag)
+        print("MapCanvas initialized!")
 
     # -------------------- 核心交互方法 --------------------
     def mousePressEvent(self, event) -> None:
@@ -52,6 +53,7 @@ class MapCanvas(QGraphicsView):
         if self.click_enabled and event.button() == Qt.LeftButton:
             scene_pos = self.mapToScene(event.pos())
             closest_id = self._get_closest_node(scene_pos)
+            print(f"原始点击坐标：{event.pos().x()},{event.pos().y()} → 场景坐标：{scene_pos.x():.1f},{scene_pos.y():.1f}")
             
             if closest_id:
                 if not self.start_id:
@@ -88,6 +90,7 @@ class MapCanvas(QGraphicsView):
     # -------------------- 图形绘制方法 --------------------
     def _draw_node_marker(self, node_id: int, color: Qt.GlobalColor) -> None:
         """绘制节点标记"""
+        print(f"绘制节点{node_id} @ ({self.path_service.nodes[node_id][0]:.1f}, {self.path_service.nodes[node_id][1]:.1f})")
         x, y = self.path_service.nodes[node_id]
         marker = QGraphicsEllipseItem(x-8, y-8, 16, 16)
         marker.setPen(QPen(color, 2))
