@@ -1,6 +1,6 @@
-# gui/main_window.py
+# 文件：gui/main_window.py
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                             QLabel, QLineEdit, QPushButton, QMessageBox)
+                             QPushButton, QMessageBox)
 from PyQt5.QtCore import Qt
 from gui.map_canvas import MapCanvas
 
@@ -36,24 +36,17 @@ class MainWindow(QMainWindow):
         """创建顶部控制面板"""
         panel = QHBoxLayout()
 
-        # 确认画图更新按钮
-        btn_confirm_draw = QPushButton("确认画图更新")
-        btn_confirm_draw.clicked.connect(self._handle_confirm_draw)
-        btn_confirm_draw.setStyleSheet("background-color: #4CAF50; color: white;")
+        # 重置按钮
+        btn_reset = QPushButton("重置")
+        btn_reset.clicked.connect(self._handle_reset)
+        btn_reset.setStyleSheet("background-color: #FF5722; color: white;")
 
         # 组装面板
-        panel.addWidget(btn_confirm_draw)
+        panel.addWidget(btn_reset)
         panel.addStretch(1)
 
         return panel
 
-    def _handle_confirm_draw(self):
-        """处理确认画图更新按钮点击"""
-        if self.map_canvas.start_id and self.map_canvas.end_id:
-            # 取消已经画出来的点和线
-            self.map_canvas.reset_selection()
-            # 允许用户重新选择点来画线
-            self.map_canvas.click_enabled = True
-            self.map_canvas.start_path_planning(self.map_canvas.start_id, self.map_canvas.end_id)
-        else:
-            QMessageBox.warning(self, "输入错误", "请先选择起点和终点")
+    def _handle_reset(self):
+        """处理重置按钮点击"""
+        self.map_canvas.reset_selection()
