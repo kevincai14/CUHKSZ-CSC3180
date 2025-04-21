@@ -39,7 +39,7 @@ class MapCanvas(QGraphicsView):
         self.path_lines = []
         self.click_enabled = True
         self.highlighted_node = None
-        self.direct_connection = None
+        self.highlighted_marker = None
 
         # 连接信号槽
         self.path_service.path_calculated.connect(self._on_path_calculated)
@@ -56,7 +56,8 @@ class MapCanvas(QGraphicsView):
         if self.click_enabled and event.button() == Qt.LeftButton:
             scene_pos = self.mapToScene(event.pos())
             closest_id = self._get_closest_node(scene_pos)
-            print(f"原始点击坐标：{event.pos().x()},{event.pos().y()} → 场景坐标：{scene_pos.x():.1f},{scene_pos.y():.1f}")
+            print(
+                f"原始点击坐标：{event.pos().x()},{event.pos().y()} → 场景坐标：{scene_pos.x():.1f},{scene_pos.y():.1f}")
 
             if closest_id:
                 if not self.start_id:
@@ -66,23 +67,30 @@ class MapCanvas(QGraphicsView):
 
     def mouseMoveEvent(self, event) -> None:
         """鼠标移动事件处理"""
-        scene_pos = self.mapToScene(event.pos())
-        closest_id = self._get_closest_node(scene_pos)
+        if self.click_enabled:
+            scene_pos = self.mapToScene(event.pos())
+            closest_id = self._get_closest_node(scene_pos)
 
-        # 移除之前高亮的节点
-        if self.highlighted_node:
-            self.scene.removeItem(self.highlighted_node)
-            self.highlighted_node = None
+            if closest_id:
+                if self.highlighted_node != closest_id:
+                    if self.highlighted_marker:
+                        self.scene.removeItem(self.highlighted_marker)
+                    self.highlighted_node = closest_id
+                    self.highlighted_marker = self._draw_highlighted_node(closest_id)
+            else:
+                if self.highlighted_marker:
+                    self.scene.removeItem(self.highlighted_marker)
+                    self.highlighted_node = None
+                    self.highlighted_marker = None
 
-        # 如果有附近的节点，高亮显示
-        if closest_id:
-            x, y = self.path_service.nodes[closest_id]
-            highlight_pen = QPen(QColor(0, 255, 0), 4)  # 绿色高亮
-            highlight_brush = QBrush(QColor(0, 255, 0, 100))  # 半透明绿色
-            self.highlighted_node = QGraphicsEllipseItem(x - 12, y - 12, 24, 24)
-            self.highlighted_node.setPen(highlight_pen)
-            self.highlighted_node.setBrush(highlight_brush)
-            self.scene.addItem(self.highlighted_node)
+    def _draw_highlighted_node(self, node_id: int):
+        """绘制高亮节点标记"""
+        x, y = self.path_service.nodes[node_id]
+        marker = QGraphicsEllipseItem(x - 8, y - 8, 16, 16)
+        marker.setPen(QPen(QColor(0, 255, 0), 2))  # 绿色高亮
+        marker.setBrush(QBrush(QColor(0, 255, 0, 100)))  # 半透明绿色填充
+        self.scene.addItem(marker)
+        return marker
 
     def _handle_start_selection(self, node_id: int, pos: QPointF) -> None:
         """处理起点选择"""
@@ -96,7 +104,6 @@ class MapCanvas(QGraphicsView):
         self._draw_node_marker(node_id, Qt.red)
         print(f"终点选择: 节点{node_id} @ ({pos.x():.1f}, {pos.y():.1f})")
         self._start_calculation()
-        self._draw_direct_connection()
 
     # -------------------- 路径计算相关 --------------------
     def _start_calculation(self) -> None:
@@ -114,7 +121,8 @@ class MapCanvas(QGraphicsView):
     # -------------------- 图形绘制方法 --------------------
     def _draw_node_marker(self, node_id: int, color: Qt.GlobalColor) -> None:
         """绘制节点标记"""
-        print(f"绘制节点{node_id} @ ({self.path_service.nodes[node_id][0]:.1f}, {self.path_service.nodes[node_id][1]:.1f})")
+        print(
+            f"绘制节点{node_id} @ ({self.path_service.nodes[node_id][0]:.1f}, {self.path_service.nodes[node_id][1]:.1f})")
         x, y = self.path_service.nodes[node_id]
         marker = QGraphicsEllipseItem(x - 8, y - 8, 16, 16)
         marker.setPen(QPen(color, 2))
@@ -136,16 +144,6 @@ class MapCanvas(QGraphicsView):
                 path_pen
             )
             self.path_lines.append(line)
-
-    def _draw_direct_connection(self):
-        """绘制起点和终点之间的直接连接"""
-        if self.start_id and self.end_id and self.start_id in self.path_service.graph and self.end_id in self.path_service.graph[self.start_id]:
-            start_x, start_y = self.path_service.nodes[self.start_id]
-            end_x, end_y = self.path_service.nodes[self.end_id]
-            pen = QPen(QColor(255, 0, 0), 2)  # 红色线条
-            if self.direct_connection:
-                self.scene.removeItem(self.direct_connection)
-            self.direct_connection = self.scene.addLine(start_x, start_y, end_x, end_y, pen)
 
     # -------------------- 辅助方法 --------------------
     def _get_closest_node(self, pos: QPointF) -> int | None:
@@ -183,7 +181,6 @@ class MapCanvas(QGraphicsView):
         self.start_id = start_id
         self.end_id = end_id
         self._start_calculation()
-        self._draw_direct_connection()
 
     def reset_selection(self):
         """增强版重置方法"""
@@ -194,20 +191,16 @@ class MapCanvas(QGraphicsView):
         for item in self.scene.items():
             if isinstance(item, (QGraphicsEllipseItem, QGraphicsLineItem)):
                 self.scene.removeItem(item)
-        self.direct_connection = None
         # 保留底图
         if not any(isinstance(item, QGraphicsPixmapItem) for item in self.scene.items()):
             self.scene.addItem(self.map_pixmap)
-        self.path_lines = []
-        if self.highlighted_node:
-            self.scene.removeItem(self.highlighted_node)
-            self.highlighted_node = None
 
 
 # -------------------- 测试代码 --------------------
 if __name__ == "__main__":
     import sys
     from PyQt5.QtWidgets import QApplication, QMainWindow
+
 
     def test_app():
         app = QApplication(sys.argv)
@@ -220,5 +213,6 @@ if __name__ == "__main__":
         window.show()
 
         sys.exit(app.exec_())
+
 
     test_app()
