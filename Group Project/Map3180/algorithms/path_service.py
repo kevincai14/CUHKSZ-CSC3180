@@ -30,6 +30,17 @@ class PathService(QObject):
         try:
             Q = q_learning(self.graph, start_id, end_id)
             path_ids = extract_path(Q, start_id, end_id)
+
+            # 计算路径总长度
+            total_length = 0.0
+            for i in range(len(path_ids) - 1):
+                total_length += self.graph[path_ids[i]][path_ids[i + 1]]
+
+            # 打印结果
+            print("\n计算完成的最优路径:")
+            print(" -> ".join(map(str, path_ids)))
+            print(f"路径总长度: {total_length:.2f}")
+
             path_coords = [self.nodes[node_id] for node_id in path_ids]
             self.path_calculated.emit(path_coords)
         except Exception as e:
