@@ -1,4 +1,3 @@
-# 文件：map_canvas.py
 from PyQt5.QtCore import Qt, QPointF, QThreadPool, QRunnable
 from PyQt5.QtGui import QPixmap, QPen, QBrush, QColor, QFont
 from PyQt5.QtWidgets import (
@@ -42,13 +41,14 @@ class MapCanvas(QGraphicsView):
         self.highlighted_marker = None
 
         # 连接信号槽
-        self.path_service.path_calculated.connect(self._on_path_calculated)
         self.path_service.calculation_failed.connect(self._show_error)
+        self.path_service.path_calculated.connect(self._draw_path)  # 新增连接
 
         # 设置交互属性
         self.setMouseTracking(True)
         self.setDragMode(QGraphicsView.ScrollHandDrag)
         print("MapCanvas initialized!")
+
 
     # -------------------- 核心交互方法 --------------------
     def mousePressEvent(self, event) -> None:
@@ -112,12 +112,6 @@ class MapCanvas(QGraphicsView):
         worker = PathWorker(self.path_service, self.start_id, self.end_id)
         self.thread_pool.start(worker)
 
-    def _on_path_calculated(self, path_coords: list) -> None:
-        """处理计算结果"""
-        self.set_loading_state(False)
-        self._draw_path([QPointF(x, y) for x, y in path_coords])
-        self.reset_selection()
-
     # -------------------- 图形绘制方法 --------------------
     def _draw_node_marker(self, node_id: int, color: Qt.GlobalColor) -> None:
         """绘制节点标记"""
@@ -129,21 +123,23 @@ class MapCanvas(QGraphicsView):
         marker.setBrush(QBrush(color))
         self.scene.addItem(marker)
 
-    def _draw_path(self, path_points: list) -> None:
-        """绘制路径（带动画效果）"""
-        # 清除旧路径
-        for item in self.path_lines:
-            self.scene.removeItem(item)
+    def _draw_path(self, path_coords):
+        """根据路径坐标绘制线条"""
+        # 清除旧的路径线条
+        for line in self.path_lines:
+            self.scene.removeItem(line)
+        self.path_lines = []
 
-        # 绘制新路径
-        path_pen = QPen(QColor(255, 165, 0), 4)  # 橙色路径
-        for i in range(len(path_points) - 1):
-            line = self.scene.addLine(
-                path_points[i].x(), path_points[i].y(),
-                path_points[i + 1].x(), path_points[i + 1].y(),
-                path_pen
-            )
+        # 绘制新的路径线条
+        for i in range(len(path_coords) - 1):
+            start_x, start_y = path_coords[i]
+            end_x, end_y = path_coords[i + 1]
+            line = QGraphicsLineItem(start_x, start_y, end_x, end_y)
+            line.setPen(QPen(QColor(255, 0, 0), 2))  # 红色线条
+            self.scene.addItem(line)
             self.path_lines.append(line)
+
+        self.set_loading_state(False)
 
     # -------------------- 辅助方法 --------------------
     def _get_closest_node(self, pos: QPointF) -> int | None:
@@ -194,6 +190,8 @@ class MapCanvas(QGraphicsView):
         # 保留底图
         if not any(isinstance(item, QGraphicsPixmapItem) for item in self.scene.items()):
             self.scene.addItem(self.map_pixmap)
+        # 清除路径线条列表
+        self.path_lines = []
 
 
 # -------------------- 测试代码 --------------------
