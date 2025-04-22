@@ -1,3 +1,4 @@
+
 # 文件：gui/main_window.py
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QPushButton, QMessageBox)
@@ -50,3 +51,4 @@ class MainWindow(QMainWindow):
     def _handle_reset(self):
         """处理重置按钮点击"""
         self.map_canvas.reset_selection()
+
