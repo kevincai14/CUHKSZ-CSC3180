@@ -56,8 +56,20 @@ class MainWindow(QMainWindow):
         btn_reset.clicked.connect(self._handle_reset)
         btn_reset.setStyleSheet("background-color: #FF5722; color: white;")
 
+        # 车祸按钮
+        btn_carcrash = QPushButton("Simulate Car Crash")
+        btn_carcrash.clicked.connect(self._car_crash)
+        btn_carcrash.setStyleSheet("background-color: #FF5722; color: white;")
+
+        # 暴雨按钮
+        btn_rainstorm = QPushButton("Simulate Rainstorm")
+        btn_rainstorm.clicked.connect(self._trigger_rainstorm)
+        btn_rainstorm.setStyleSheet("background-color: #FF5722; color: white;")
+
         # 组装面板
         panel.addWidget(btn_reset)
+        panel.addWidget(btn_carcrash)
+        panel.addWidget(btn_rainstorm)
         panel.addStretch(1)
 
         return panel
@@ -67,3 +79,11 @@ class MainWindow(QMainWindow):
         self.map_canvas.reset_selection()
 
         self.info_panel.clear()  # 清除信息面板的内容
+
+    def _car_crash(self):
+        """处理重置按钮点击"""
+        self.map_canvas.add_simulated_carcrash()
+        
+    def _trigger_rainstorm(self):
+        """处理重置按钮点击"""
+        self.map_canvas.add_simulated_carcrash()

@@ -9,6 +9,8 @@ from algorithms.path_service import PathService
 from PyQt5.QtCore import QObject, QRunnable, pyqtSignal
 from PyQt5.QtWidgets import QTextEdit
 
+var_special_mode_active = 0
+
 class PathSignals(QObject):
     finished = pyqtSignal(list)
 
@@ -70,18 +72,29 @@ class MapCanvas(QGraphicsView):
 
     # -------------------- 核心交互方法 --------------------
     def mousePressEvent(self, event) -> None:
+        global var_special_mode_active
         """鼠标点击事件处理"""
         if self.click_enabled and event.button() == Qt.LeftButton:
             scene_pos = self.mapToScene(event.pos())
             closest_id = self._get_closest_node(scene_pos)
             print(
                 f"原始点击坐标：{event.pos().x()},{event.pos().y()} → 场景坐标：{scene_pos.x():.1f},{scene_pos.y():.1f}")
-
+            print(var_special_mode_active)
             if closest_id:
                 if not self.start_id:
                     self._handle_start_selection(closest_id, scene_pos)
                 else:
                     self._handle_end_selection(closest_id, scene_pos)
+        if var_special_mode_active == 1:
+            for item in self.scene.items():
+                if isinstance(item, (QGraphicsEllipseItem)):
+                    self.scene.removeItem(item)
+            redx = event.pos().x()
+            redy = event.pos().y()
+            redmarker = QGraphicsEllipseItem(redx - 150, redy - 150, 300, 300)
+            redmarker.setPen(QPen(QColor(255, 0, 0), 2))  # 红色高亮
+            self.scene.addItem(redmarker)
+            var_special_mode_active = 0
 
     def mouseMoveEvent(self, event) -> None:
         """鼠标移动事件处理"""
@@ -100,6 +113,15 @@ class MapCanvas(QGraphicsView):
                     self.scene.removeItem(self.highlighted_marker)
                     self.highlighted_node = None
                     self.highlighted_marker = None
+        if var_special_mode_active == 1:
+            for item in self.scene.items():
+                if isinstance(item, (QGraphicsEllipseItem)):
+                    self.scene.removeItem(item)
+            redx = event.pos().x()
+            redy = event.pos().y()
+            redmarker = QGraphicsEllipseItem(redx - 150, redy - 150, 300, 300)
+            redmarker.setPen(QPen(QColor(255, 0, 0), 2))  # 红色高亮
+            self.scene.addItem(redmarker)
 
     def _draw_highlighted_node(self, node_id: int):
         """绘制高亮节点标记"""
@@ -246,6 +268,8 @@ class MapCanvas(QGraphicsView):
         self.start_id = None
         self.end_id = None
         self.click_enabled = True
+        global var_special_mode_active
+        var_special_mode_active = 0
         # 清除所有临时图形
         for item in self.scene.items():
             if isinstance(item, (QGraphicsEllipseItem, QGraphicsLineItem)):
@@ -259,6 +283,13 @@ class MapCanvas(QGraphicsView):
         # 清空信息面板
         if hasattr(self, 'info_panel'):
             self.info_panel.clear()  # 这个是清空面板的内容
+
+    def add_simulated_carcrash(self):
+        """放置车祸点位"""
+        #设置车祸模式
+        global var_special_mode_active
+        var_special_mode_active = 1
+        self.click_enabled = True
 
 
 # -------------------- 测试代码 --------------------

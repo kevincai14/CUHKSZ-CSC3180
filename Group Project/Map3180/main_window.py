@@ -37,12 +37,24 @@ class MainWindow(QMainWindow):
         panel = QHBoxLayout()
 
         # 重置按钮
-        btn_reset = QPushButton("重置")
+        btn_reset = QPushButton("Reset")
         btn_reset.clicked.connect(self._handle_reset)
         btn_reset.setStyleSheet("background-color: #FF5722; color: white;")
 
+        # 车祸按钮
+        btn_carcrash = QPushButton("Simulate Car Crash")
+        btn_carcrash.clicked.connect(self._car_crash)
+        btn_carcrash.setStyleSheet("background-color: #FF5722; color: white;")
+
+        # 暴雨按钮
+        btn_rainstorm = QPushButton("simulate rainstorm")
+        btn_rainstorm.clicked.connect(self._trigger_rainstorm)
+        btn_rainstorm.setStyleSheet("background-color: #FF5722; color: white;")
+
         # 组装面板
         panel.addWidget(btn_reset)
+        panel.addWidget(btn_carcrash)
+        panel.addWidget(btn_rainstorm)
         panel.addStretch(1)
 
         return panel
@@ -50,3 +62,11 @@ class MainWindow(QMainWindow):
     def _handle_reset(self):
         """处理重置按钮点击"""
         self.map_canvas.reset_selection()
+
+    def _car_crash(self):
+        """处理重置按钮点击"""
+        self.map_canvas.add_simulated_carcrash()
+
+    def _trigger_rainstorm(self):
+        """处理重置按钮点击"""
+        self.map_canvas.add_simulated_carcrash()
