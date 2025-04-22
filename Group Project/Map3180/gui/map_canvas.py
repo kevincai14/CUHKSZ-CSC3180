@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import (
 )
 from algorithms.path_service import PathService
 from PyQt5.QtCore import QObject, QRunnable, pyqtSignal
+from PyQt5.QtWidgets import QTextEdit
 
 class PathSignals(QObject):
     finished = pyqtSignal(list)
@@ -40,6 +41,8 @@ class MapCanvas(QGraphicsView):
         self.map_pixmap = QGraphicsPixmapItem(QPixmap(map_path))
         self.scene.addItem(self.map_pixmap)
 
+        self.info_panel = None  # ← 新增：右侧显示面板
+
         # 初始化路径服务
         self.path_service = PathService()
         self.thread_pool = QThreadPool.globalInstance()
@@ -61,6 +64,9 @@ class MapCanvas(QGraphicsView):
         self.setDragMode(QGraphicsView.ScrollHandDrag)
         print("MapCanvas initialized!")
 
+    def set_info_panel(self, panel: QTextEdit):
+        """设置右侧信息面板"""
+        self.info_panel = panel
 
     # -------------------- 核心交互方法 --------------------
     def mousePressEvent(self, event) -> None:
@@ -170,6 +176,29 @@ class MapCanvas(QGraphicsView):
 
         self.set_loading_state(False)
 
+        # ==== 更新信息面板 ====
+        if self.info_panel and self.path_service:
+            # 找出路径经过的节点ID
+            node_ids = []
+            for coord in path_coords:
+                for node_id, pos in self.path_service.nodes.items():
+                    if pos == coord:
+                        node_ids.append(str(node_id))
+                        break
+
+            # 计算路径总长
+            total_length = 0.0
+            for i in range(len(node_ids) - 1):
+                nid1 = int(node_ids[i])
+                nid2 = int(node_ids[i + 1])
+                if nid2 in self.path_service.graph.get(nid1, {}):
+                    total_length += self.path_service.graph[nid1][nid2]
+
+            # 写入信息面板
+            self.info_panel.setText(
+                f"Path：\n{' → '.join(node_ids)}\n\nTotal Length：{total_length:.2f}"
+            )
+
     # -------------------- 辅助方法 --------------------
     def _get_closest_node(self, pos: QPointF) -> int | None:
         """获取最近节点ID（带阈值检测）"""
@@ -226,6 +255,10 @@ class MapCanvas(QGraphicsView):
             self.scene.addItem(self.map_pixmap)
         # 清除路径线条列表
         self.path_lines = []
+
+        # 清空信息面板
+        if hasattr(self, 'info_panel'):
+            self.info_panel.clear()  # 这个是清空面板的内容
 
 
 # -------------------- 测试代码 --------------------
