@@ -25,7 +25,18 @@ class MainWindow(QMainWindow):
         self.info_panel = QTextEdit()
         self.info_panel.setReadOnly(True)
         self.info_panel.setFixedWidth(300)
-        self.info_panel.setStyleSheet("background-color: #f0f0f0;")
+        # self.info_panel.setStyleSheet("background-color: #f0f0f0;")
+        self.info_panel.setStyleSheet("""
+            QTextEdit {
+                background-color: #f9f9f9;
+                border: 1px solid #cccccc;
+                border-radius: 6px;
+                padding: 8px;
+                font-family: Consolas, 'Courier New', monospace;
+                font-size: 20px;
+                color: #333333;
+            }
+        """)
 
         # 将 info_panel 传给 map_canvas
         self.map_canvas.set_info_panel(self.info_panel)
