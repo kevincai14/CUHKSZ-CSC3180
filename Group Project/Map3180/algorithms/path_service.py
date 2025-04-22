@@ -43,5 +43,10 @@ class PathService(QObject):
 
             path_coords = [self.nodes[node_id] for node_id in path_ids]
             self.path_calculated.emit(path_coords)
+            print("路径计算完成！", "path_coords:", path_coords)
+            print("path_ids:", path_ids)
+            # 返回路径坐标列表，交给地图组件显示
+            return path_coords
+        
         except Exception as e:
             self.calculation_failed.emit(str(e))
