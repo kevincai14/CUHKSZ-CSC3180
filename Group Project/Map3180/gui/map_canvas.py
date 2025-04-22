@@ -1,3 +1,4 @@
+
 from PyQt5.QtCore import Qt, QPointF, QThreadPool, QRunnable
 from PyQt5.QtGui import QPixmap, QPen, QBrush, QColor, QFont
 from PyQt5.QtWidgets import (
@@ -5,18 +6,29 @@ from PyQt5.QtWidgets import (
     QMessageBox, QGraphicsEllipseItem, QGraphicsLineItem
 )
 from algorithms.path_service import PathService
+from PyQt5.QtCore import QObject, QRunnable, pyqtSignal
 
+class PathSignals(QObject):
+    finished = pyqtSignal(list)
 
 class PathWorker(QRunnable):
+    finished = pyqtSignal(list)
     def __init__(self, service: PathService, start_id: int, end_id: int):
         super().__init__()
+        self.signals = PathSignals()  # 信号封装在QObject中
         self.service = service
         self.start_id = start_id
         self.end_id = end_id
+        self.path_coords = []
+        
 
     def run(self) -> None:
         """执行路径计算任务"""
-        self.service.calculate_path(self.start_id, self.end_id)
+        self.path_coords = self.service.calculate_path(self.start_id, self.end_id)
+        self.signals.finished.emit(self.path_coords)  # 通过QObject发射信号
+
+    def get_path_coords(self) -> list:
+        return self.path_coords
 
 
 class MapCanvas(QGraphicsView):
@@ -103,14 +115,28 @@ class MapCanvas(QGraphicsView):
         self.end_id = node_id
         self._draw_node_marker(node_id, Qt.red)
         print(f"终点选择: 节点{node_id} @ ({pos.x():.1f}, {pos.y():.1f})")
-        self._start_calculation()
+        self.path_lines = self._start_calculation()
+
+
 
     # -------------------- 路径计算相关 --------------------
-    def _start_calculation(self) -> None:
+    def _start_calculation(self) -> list:
         """启动后台计算任务"""
         self.set_loading_state(True)
         worker = PathWorker(self.path_service, self.start_id, self.end_id)
+
+        worker.signals.finished.connect(self._on_path_calculated)  # 正确连接信号
         self.thread_pool.start(worker)
+
+        path_coords = worker.get_path_coords()
+        print("计算完成", "path__coords: ", path_coords)
+        return path_coords
+
+    def _on_path_calculated(self, path_coords: list):
+        """处理计算结果"""
+        self.set_loading_state(False)
+        self._draw_path(path_coords)
+        print(f"Path: {path_coords}")
 
     # -------------------- 图形绘制方法 --------------------
     def _draw_node_marker(self, node_id: int, color: Qt.GlobalColor) -> None:
@@ -123,14 +149,16 @@ class MapCanvas(QGraphicsView):
         marker.setBrush(QBrush(color))
         self.scene.addItem(marker)
 
-    def _draw_path(self, path_coords):
+    def _draw_path(self, path_coords: list):
         """根据路径坐标绘制线条"""
         # 清除旧的路径线条
+        print("绘制路径")
         for line in self.path_lines:
             self.scene.removeItem(line)
         self.path_lines = []
 
         # 绘制新的路径线条
+        print("开始绘制路径", path_coords)
         for i in range(len(path_coords) - 1):
             start_x, start_y = path_coords[i]
             end_x, end_y = path_coords[i + 1]
@@ -138,6 +166,7 @@ class MapCanvas(QGraphicsView):
             line.setPen(QPen(QColor(255, 0, 0), 2))  # 红色线条
             self.scene.addItem(line)
             self.path_lines.append(line)
+        print("路径绘制完成")
 
         self.set_loading_state(False)
 
@@ -176,7 +205,12 @@ class MapCanvas(QGraphicsView):
         # 启动计算
         self.start_id = start_id
         self.end_id = end_id
-        self._start_calculation()
+        self.path_lines = self._start_calculation()
+        path_coords = self.path_lines.copy()
+        print(f"路径规划结果: {path_coords}")
+        # self._draw_path(path_coords)
+        # print("start_planning函数完成")
+
 
     def reset_selection(self):
         """增强版重置方法"""
