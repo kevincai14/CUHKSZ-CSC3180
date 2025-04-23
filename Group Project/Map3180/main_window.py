@@ -69,4 +69,4 @@ class MainWindow(QMainWindow):
 
     def _trigger_rainstorm(self):
         """处理重置按钮点击"""
-        self.map_canvas.add_simulated_carcrash()
+        self.map_canvas.add_simulated_rainstorm()

@@ -97,7 +97,22 @@ class MapCanvas(QGraphicsView):
             self.scene.addItem(redmarker)
 
             # 调用惩罚方法，增加该区域内的路径代价
-            self.path_service.apply_penalty_area((redx, redy), radius=150, penalty_factor=1000.0)
+            self.path_service.apply_penalty_area((redx, redy), radius=150, penalty_factor=25.0)
+
+            var_special_mode_active = 0
+        elif var_special_mode_active == 2:
+            for item in self.scene.items():
+                if isinstance(item, (QGraphicsEllipseItem)):
+                    self.scene.removeItem(item)
+            scene_pos = self.mapToScene(event.pos())
+            redx = scene_pos.x()
+            redy = scene_pos.y()
+            redmarker = QGraphicsEllipseItem(redx - 25, redy - 25, 50, 50)
+            redmarker.setPen(QPen(QColor(255, 0, 0), 2))  # 红色高亮
+            self.scene.addItem(redmarker)
+
+            # 调用惩罚方法，增加该区域内的路径代价
+            self.path_service.apply_penalty_area((redx, redy), radius=25, penalty_factor=5000.0)
 
             var_special_mode_active = 0
 
@@ -132,6 +147,22 @@ class MapCanvas(QGraphicsView):
 
             # 创建新的红圈（以鼠标为中心）
             redmarker = QGraphicsEllipseItem(x - 150, y - 150, 300, 300)
+            redmarker.setPen(QPen(QColor(255, 0, 0), 2))  # 红色高亮
+            self.scene.addItem(redmarker)
+
+        elif var_special_mode_active == 2:
+            # 先转换鼠标位置为场景坐标
+            scene_pos = self.mapToScene(event.pos())
+            x = scene_pos.x()
+            y = scene_pos.y()
+
+            # 删除旧的红圈
+            for item in self.scene.items():
+                if isinstance(item, QGraphicsEllipseItem) and item.pen().color() == QColor(255, 0, 0):
+                    self.scene.removeItem(item)
+
+            # 创建新的红圈（以鼠标为中心）
+            redmarker = QGraphicsEllipseItem(x - 25, y - 25, 50, 50)
             redmarker.setPen(QPen(QColor(255, 0, 0), 2))  # 红色高亮
             self.scene.addItem(redmarker)
 
@@ -298,11 +329,18 @@ class MapCanvas(QGraphicsView):
 
         self.path_service.reset_penalty()
 
+    def add_simulated_rainstorm(self):
+        """放置暴雨点位"""
+        #设置车祸模式
+        global var_special_mode_active
+        var_special_mode_active = 1
+        self.click_enabled = True
+
     def add_simulated_carcrash(self):
         """放置车祸点位"""
         #设置车祸模式
         global var_special_mode_active
-        var_special_mode_active = 1
+        var_special_mode_active = 2
         self.click_enabled = True
 
 
