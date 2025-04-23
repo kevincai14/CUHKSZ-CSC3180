@@ -95,6 +95,10 @@ class MapCanvas(QGraphicsView):
             redmarker = QGraphicsEllipseItem(redx - 150, redy - 150, 300, 300)
             redmarker.setPen(QPen(QColor(255, 0, 0), 2))  # 红色高亮
             self.scene.addItem(redmarker)
+
+            # 调用惩罚方法，增加该区域内的路径代价
+            self.path_service.apply_penalty_area((redx, redy), radius=150, penalty_factor=1000.0)
+
             var_special_mode_active = 0
 
     def mouseMoveEvent(self, event) -> None:
@@ -291,6 +295,8 @@ class MapCanvas(QGraphicsView):
         # 清空信息面板
         if hasattr(self, 'info_panel'):
             self.info_panel.clear()  # 这个是清空面板的内容
+
+        self.path_service.reset_penalty()
 
     def add_simulated_carcrash(self):
         """放置车祸点位"""

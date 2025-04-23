@@ -14,6 +14,7 @@ class PathService(QObject):
         super().__init__()
         self.nodes = None
         self.graph = None
+        self.original_costs = {}  # 用来保存边的原始代价
 
     def initialize_data(self, node_file: str, edge_file: str):
         """初始化节点和边数据"""
@@ -47,6 +48,46 @@ class PathService(QObject):
             print("path_ids:", path_ids)
             # 返回路径坐标列表，交给地图组件显示
             return path_coords
-        
+
         except Exception as e:
             self.calculation_failed.emit(str(e))
+
+    def apply_penalty_area(self, center: tuple, radius: float, penalty_factor: float = 1000.0):
+        """
+        对落在指定圆形区域内的路径增加代价。
+        :param center: (x, y) 圆心坐标
+        :param radius: 圆半径
+        :param penalty_factor: 惩罚倍数，默认为 1000 倍
+        """
+        if self.nodes is None or self.graph is None:
+            print("图数据未初始化，无法应用惩罚区域。")
+            return
+
+        cx, cy = center
+        for u in self.graph:
+            for v in self.graph[u]:
+                if v not in self.nodes or u not in self.nodes:
+                    continue
+                x1, y1 = self.nodes[u]
+                x2, y2 = self.nodes[v]
+                mx = (x1 + x2) / 2
+                my = (y1 + y2) / 2
+                dist_sq = (mx - cx) ** 2 + (my - cy) ** 2
+                if dist_sq <= radius ** 2:
+                    # 如果这条边尚未保存过原始代价，保存原始代价
+                    if (u, v) not in self.original_costs:
+                        self.original_costs[(u, v)] = self.graph[u][v]
+
+                    # 应用惩罚
+                    original_cost = self.graph[u][v]
+                    self.graph[u][v] = original_cost * penalty_factor
+                    print(f"边 ({u}, {v}) 位于惩罚区域内，代价从 {original_cost} 增加到 {self.graph[u][v]}")
+
+    def reset_penalty(self):
+        """重置惩罚并恢复所有边的原始代价"""
+        if self.original_costs:
+            for (u, v), original_cost in self.original_costs.items():
+                self.graph[u][v] = original_cost  # 恢复原始代价
+                print(f"恢复边 ({u}, {v}) 的代价为 {original_cost}")
+            # 清空原始代价字典
+            self.original_costs.clear()
