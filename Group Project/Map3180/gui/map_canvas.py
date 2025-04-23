@@ -89,8 +89,9 @@ class MapCanvas(QGraphicsView):
             for item in self.scene.items():
                 if isinstance(item, (QGraphicsEllipseItem)):
                     self.scene.removeItem(item)
-            redx = event.pos().x()
-            redy = event.pos().y()
+            scene_pos = self.mapToScene(event.pos())
+            redx = scene_pos.x()
+            redy = scene_pos.y()
             redmarker = QGraphicsEllipseItem(redx - 150, redy - 150, 300, 300)
             redmarker.setPen(QPen(QColor(255, 0, 0), 2))  # 红色高亮
             self.scene.addItem(redmarker)
@@ -113,13 +114,20 @@ class MapCanvas(QGraphicsView):
                     self.scene.removeItem(self.highlighted_marker)
                     self.highlighted_node = None
                     self.highlighted_marker = None
+
         if var_special_mode_active == 1:
+            # 先转换鼠标位置为场景坐标
+            scene_pos = self.mapToScene(event.pos())
+            x = scene_pos.x()
+            y = scene_pos.y()
+
+            # 删除旧的红圈
             for item in self.scene.items():
-                if isinstance(item, (QGraphicsEllipseItem)):
+                if isinstance(item, QGraphicsEllipseItem) and item.pen().color() == QColor(255, 0, 0):
                     self.scene.removeItem(item)
-            redx = event.pos().x()
-            redy = event.pos().y()
-            redmarker = QGraphicsEllipseItem(redx - 150, redy - 150, 300, 300)
+
+            # 创建新的红圈（以鼠标为中心）
+            redmarker = QGraphicsEllipseItem(x - 150, y - 150, 300, 300)
             redmarker.setPen(QPen(QColor(255, 0, 0), 2))  # 红色高亮
             self.scene.addItem(redmarker)
 
