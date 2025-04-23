@@ -44,6 +44,8 @@ class MapCanvas(QGraphicsView):
         self.scene.addItem(self.map_pixmap)
 
         self.info_panel = None  # ← 新增：右侧显示面板
+        self.accident_icon = QPixmap("data/car_crash.png")  # 确保图片路径正确
+        self.accident_marker = None
 
         # 初始化路径服务
         self.path_service = PathService()
@@ -100,21 +102,31 @@ class MapCanvas(QGraphicsView):
             self.path_service.apply_penalty_area((redx, redy), radius=150, penalty_factor=25.0)
 
             var_special_mode_active = 0
-            
+
         elif var_special_mode_active == 2:
+            # 删除旧的红圈
             for item in self.scene.items():
-                if isinstance(item, QGraphicsEllipseItem) and item.pen().color() == QColor(255, 0, 0):
+                if isinstance(item, QGraphicsEllipseItem) and item.pen().color() == QColor(254, 0, 0):
                     self.scene.removeItem(item)
+
+            # 转换鼠标位置为场景坐标
             scene_pos = self.mapToScene(event.pos())
             redx = scene_pos.x()
             redy = scene_pos.y()
-            redmarker = QGraphicsEllipseItem(redx - 25, redy - 25, 50, 50)
-            redmarker.setPen(QPen(QColor(254, 0, 0), 2))  # 红色高亮
-            self.scene.addItem(redmarker)
+
+            # 缩放图片大小
+            scaled_icon = self.accident_icon.scaled(150, 150, Qt.AspectRatioMode.KeepAspectRatio)  # 调整为50x50大小，保持比例
+
+            # 创建新的图片标记
+            image_marker = QGraphicsPixmapItem(scaled_icon)
+            image_marker.setOffset(-scaled_icon.width() / 2, -scaled_icon.height() / 2)  # 确保图标居中
+            image_marker.setPos(redx, redy)
+            self.scene.addItem(image_marker)
 
             # 调用惩罚方法，增加该区域内的路径代价
             self.path_service.apply_penalty_area((redx, redy), radius=25, penalty_factor=1000.0)
 
+            # 关闭特殊模式
             var_special_mode_active = 0
 
     def mouseMoveEvent(self, event) -> None:
@@ -152,20 +164,22 @@ class MapCanvas(QGraphicsView):
             self.scene.addItem(redmarker)
 
         elif var_special_mode_active == 2:
-            # 先转换鼠标位置为场景坐标
             scene_pos = self.mapToScene(event.pos())
             x = scene_pos.x()
             y = scene_pos.y()
 
-            # 删除旧的红圈
-            for item in self.scene.items():
-                if isinstance(item, QGraphicsEllipseItem) and item.pen().color() == QColor(255, 0, 0):
-                    self.scene.removeItem(item)
+            # 删除旧图标
+            if self.accident_marker:
+                self.scene.removeItem(self.accident_marker)
 
-            # 创建新的红圈（以鼠标为中心）
-            redmarker = QGraphicsEllipseItem(x - 25, y - 25, 50, 50)
-            redmarker.setPen(QPen(QColor(255, 0, 0), 2))  # 红色高亮
-            self.scene.addItem(redmarker)
+            # 缩放图片大小
+            scaled_icon = self.accident_icon.scaled(150, 150, Qt.AspectRatioMode.KeepAspectRatio)  # 设置新大小为50x50，保持原始比例
+
+            # 创建新的车祸图标
+            self.accident_marker = QGraphicsPixmapItem(scaled_icon)
+            self.accident_marker.setOffset(-scaled_icon.width() / 2, -scaled_icon.height() / 2)  # 确保图标居中
+            self.accident_marker.setPos(x, y)
+            self.scene.addItem(self.accident_marker)
 
     def _draw_highlighted_node(self, node_id: int):
         """绘制高亮节点标记"""
@@ -306,7 +320,6 @@ class MapCanvas(QGraphicsView):
         # self._draw_path(path_coords)
         # print("start_planning函数完成")
 
-
     def reset_selection(self):
         """增强版重置方法"""
         self.start_id = None
@@ -314,9 +327,10 @@ class MapCanvas(QGraphicsView):
         self.click_enabled = True
         global var_special_mode_active
         var_special_mode_active = 0
-        # 清除所有临时图形
+
+        # 清除所有临时图形，包括车祸图标
         for item in self.scene.items():
-            if isinstance(item, (QGraphicsEllipseItem, QGraphicsLineItem)):
+            if isinstance(item, (QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPixmapItem)):
                 self.scene.removeItem(item)
         # 保留底图
         if not any(isinstance(item, QGraphicsPixmapItem) for item in self.scene.items()):
