@@ -87,32 +87,33 @@ class MapCanvas(QGraphicsView):
                     self._handle_end_selection(closest_id, scene_pos)
         if var_special_mode_active == 1:
             for item in self.scene.items():
-                if isinstance(item, (QGraphicsEllipseItem)):
+                if isinstance(item, QGraphicsEllipseItem) and item.pen().color() == QColor(255, 0, 0):
                     self.scene.removeItem(item)
             scene_pos = self.mapToScene(event.pos())
             redx = scene_pos.x()
             redy = scene_pos.y()
             redmarker = QGraphicsEllipseItem(redx - 150, redy - 150, 300, 300)
-            redmarker.setPen(QPen(QColor(255, 0, 0), 2))  # 红色高亮
+            redmarker.setPen(QPen(QColor(254, 0, 0), 2))  # 红色高亮
             self.scene.addItem(redmarker)
 
             # 调用惩罚方法，增加该区域内的路径代价
             self.path_service.apply_penalty_area((redx, redy), radius=150, penalty_factor=25.0)
 
             var_special_mode_active = 0
+            
         elif var_special_mode_active == 2:
             for item in self.scene.items():
-                if isinstance(item, (QGraphicsEllipseItem)):
+                if isinstance(item, QGraphicsEllipseItem) and item.pen().color() == QColor(255, 0, 0):
                     self.scene.removeItem(item)
             scene_pos = self.mapToScene(event.pos())
             redx = scene_pos.x()
             redy = scene_pos.y()
             redmarker = QGraphicsEllipseItem(redx - 25, redy - 25, 50, 50)
-            redmarker.setPen(QPen(QColor(255, 0, 0), 2))  # 红色高亮
+            redmarker.setPen(QPen(QColor(254, 0, 0), 2))  # 红色高亮
             self.scene.addItem(redmarker)
 
             # 调用惩罚方法，增加该区域内的路径代价
-            self.path_service.apply_penalty_area((redx, redy), radius=25, penalty_factor=5000.0)
+            self.path_service.apply_penalty_area((redx, redy), radius=25, penalty_factor=1000.0)
 
             var_special_mode_active = 0
 
