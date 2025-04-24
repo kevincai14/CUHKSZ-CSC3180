@@ -1,14 +1,20 @@
-# gui\map_canvas.py
+# gui/map_canvas.py
 
-from PyQt5.QtCore import Qt, QPointF, QThreadPool, QRunnable
-from PyQt5.QtGui import QPixmap, QPen, QBrush, QColor, QFont, QPainter
+from PyQt5.QtCore import (
+    Qt, QPointF, QThreadPool, QRunnable,
+    QObject, pyqtSignal, QTimer  # 新增QTimer
+)
+from PyQt5.QtGui import (
+    QPixmap, QPen, QBrush, QColor,
+    QFont, QPainter, QPainterPath,  # 新增QPainterPath
+)
 from PyQt5.QtWidgets import (
     QGraphicsView, QGraphicsScene, QGraphicsPixmapItem,
-    QMessageBox, QGraphicsEllipseItem, QGraphicsLineItem
+    QMessageBox, QGraphicsEllipseItem, QGraphicsLineItem,
+    QGraphicsPathItem,  QTextEdit            # 新增阴影效果
 )
 from algorithms.path_service import PathService
-from PyQt5.QtCore import QObject, pyqtSignal
-from PyQt5.QtWidgets import QTextEdit
+
 
 var_special_mode_active = 0
 
@@ -63,6 +69,12 @@ class MapCanvas(QGraphicsView):
         self.hover_marker = None  # 鼠标悬停临时标记
         self.start_marker = None  # 正式起点标记
         self.end_marker = None 
+
+        # 新增动画相关属性
+        self.animation_offset = 0
+        self.animation_timer = QTimer()
+        self.animation_timer.timeout.connect(self._update_animation)
+        
 
         # 初始化路径服务
         self.path_service = PathService()
@@ -388,48 +400,68 @@ class MapCanvas(QGraphicsView):
         self.scene.addItem(marker)
 
     def _draw_path(self, path_coords: list):
-        """根据路径坐标绘制线条"""
-        # 清除旧的路径线条
-        print("绘制路径")
-        for line in self.path_lines:
-            self.scene.removeItem(line)
+        """简化版路径绘制（仅虚线动画）"""
+        # 清除旧元素
+        for item in self.path_lines:
+            self.scene.removeItem(item)
         self.path_lines = []
+        self.animation_offset = 0
 
-        # 绘制新的路径线条
-        print("开始绘制路径", path_coords)
-        for i in range(len(path_coords) - 1):
-            start_x, start_y = path_coords[i]
-            end_x, end_y = path_coords[i + 1]
-            line = QGraphicsLineItem(start_x, start_y, end_x, end_y)
-            line.setPen(QPen(QColor(255, 0, 0), 2))  # 红色线条
-            self.scene.addItem(line)
-            self.path_lines.append(line)
-        print("路径绘制完成")
-
-        self.set_loading_state(False)
+        if len(path_coords) >= 2:
+            # 创建路径对象
+            path = QPainterPath()
+            path.moveTo(*path_coords[0])
+            for coord in path_coords[1:]:
+                path.lineTo(*coord)
+            
+            # 配置虚线样式
+            path_item = QGraphicsPathItem(path)
+            pen = QPen(QColor(30, 144, 255), 4)  # 固定颜色
+            pen.setDashPattern([10, 5])
+            pen.setCapStyle(Qt.RoundCap)
+            pen.setDashOffset(self.animation_offset)
+            path_item.setPen(pen)
+            
+            self.scene.addItem(path_item)
+            self.path_lines.append(path_item)
+            self.animation_timer.start(50)
 
         # ==== 更新信息面板 ====
-        if self.info_panel and self.path_service:
-            # 找出路径经过的节点ID
+        if self.info_panel and self.path_service and len(path_coords) >= 2:
+            # 提取节点ID
             node_ids = []
             for coord in path_coords:
-                for node_id, pos in self.path_service.nodes.items():
-                    if pos == coord:
-                        node_ids.append(str(node_id))
-                        break
+                closest_node = min(
+                    self.path_service.nodes.items(),
+                    key=lambda item: (item[1][0]-coord[0])**2 + (item[1][1]-coord[1])**2
+                )
+                node_ids.append(str(closest_node[0]))
 
             # 计算路径总长
-            total_length = 0.0
-            for i in range(len(node_ids) - 1):
-                nid1 = int(node_ids[i])
-                nid2 = int(node_ids[i + 1])
-                if nid2 in self.path_service.graph.get(nid1, {}):
-                    total_length += self.path_service.graph[nid1][nid2]
-
-            # 写入信息面板
-            self.info_panel.setText(
-                f"Path：\n{' → '.join(node_ids)}\n\nTotal Length：{total_length:.2f} Km"
+            total_length = sum(
+                self.path_service.graph[int(n1)].get(int(n2), 0)
+                for n1, n2 in zip(node_ids, node_ids[1:])
             )
+
+            # 格式化输出
+            info_text = f"🚀 Path:\n{' → '.join(node_ids)}\n\n"
+            info_text += f"📏 Total Length: {total_length:.2f} km\n"
+            info_text += f"🔄 Segments: {len(node_ids)-1}"
+            
+            self.info_panel.setText(info_text)
+
+        self.set_loading_state(False)
+        print("路径绘制完成（带流动效果）")
+
+    def _update_animation(self):
+        """更新动画帧"""
+        # 虚线流动
+        self.animation_offset = (self.animation_offset - 2) % 15
+        for item in self.path_lines:
+            if isinstance(item, QGraphicsPathItem):
+                pen = item.pen()
+                pen.setDashOffset(self.animation_offset)
+                item.setPen(pen)
 
     # -------------------- 辅助方法 --------------------
     def _get_closest_node(self, pos: QPointF) -> int | None:
@@ -485,6 +517,9 @@ class MapCanvas(QGraphicsView):
         self.click_enabled = True
         global var_special_mode_active
         var_special_mode_active = 0
+
+        # 停止动画
+        self.animation_timer.stop()
 
         """重置时清除所有箭头标记"""
         # 新增清除起点、终点箭头逻辑
