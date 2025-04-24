@@ -20,7 +20,7 @@ class PathService(QObject):
         """初始化节点和边数据"""
         try:
             self.nodes = read_node_data(node_file)
-            self.graph = read_edge_data(edge_file)
+            self.graph = read_edge_data(edge_file, self.nodes)
             if not self.nodes or not self.graph:
                 raise ValueError("数据文件内容为空")
         except Exception as e:

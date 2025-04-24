@@ -428,7 +428,7 @@ class MapCanvas(QGraphicsView):
 
             # 写入信息面板
             self.info_panel.setText(
-                f"Path：\n{' → '.join(node_ids)}\n\nTotal Length：{total_length:.2f}"
+                f"Path：\n{' → '.join(node_ids)}\n\nTotal Length：{total_length:.2f} Km"
             )
 
     # -------------------- 辅助方法 --------------------

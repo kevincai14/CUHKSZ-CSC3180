@@ -2,6 +2,7 @@ import configparser
 import os
 import random
 import numpy as np
+import math
 Flag = True
 
 # ================ 配置加载部分 ================
@@ -51,17 +52,41 @@ def read_node_data(filename):
             nodes[node_id] = (lat, lon)
     return nodes
 
-def read_edge_data(filename):
+
+def read_edge_data(filename, nodes):
+    """
+    读取边数据，使用节点坐标计算欧几里得距离作为边长度
+    :param filename: 边数据文件路径
+    :param nodes: 从read_node_data()返回的节点字典 {id: (lat, lon)}
+    :return: 图结构 {start: {end: distance}}
+    """
     graph = {}
     with open(filename, 'r') as file:
         for line in file:
             parts = line.strip().split()
-            if len(parts) != 4:
+            if len(parts) != 4:  # 现在只需要edge_id, start, end
                 print("Invalid edge line:", line)
                 continue
-            edge_id, start, end, length = int(parts[0]), int(parts[1]), int(parts[2]), float(parts[3])
-            graph.setdefault(start, {})[end] = length
-            graph.setdefault(end, {})[start] = length
+
+            edge_id, start, end = int(parts[0]), int(parts[1]), int(parts[2])
+
+            # 检查节点是否存在
+            if start not in nodes or end not in nodes:
+                print(f"Missing node coordinates for edge {edge_id}: {start}->{end}")
+                continue
+
+            # 获取节点坐标（经纬度）
+            lat1, lon1 = nodes[start]
+            lat2, lon2 = nodes[end]
+
+            # 计算欧几里得距离（简单差值）
+            # 注意：这不是真实地理距离，只是经纬度的算术差值
+            distance = math.sqrt((lat2 - lat1) ** 2 + (lon2 - lon1) ** 2)
+            distance *= 0.0048476868753
+            # 构建图结构（无向图）
+            graph.setdefault(start, {})[end] = distance
+            graph.setdefault(end, {})[start] = distance
+
     return graph
 
 
