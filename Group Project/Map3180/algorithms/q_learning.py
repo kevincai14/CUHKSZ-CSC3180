@@ -68,7 +68,7 @@ def read_edge_data(filename, nodes):
                 print("Invalid edge line:", line)
                 continue
 
-            edge_id, start, end = int(parts[0]), int(parts[1]), int(parts[2])
+            edge_id, start, end ,correction= int(parts[0]), int(parts[1]), int(parts[2]), float(parts[3])
 
             # 检查节点是否存在
             if start not in nodes or end not in nodes:
@@ -83,6 +83,7 @@ def read_edge_data(filename, nodes):
             # 注意：这不是真实地理距离，只是经纬度的算术差值
             distance = math.sqrt((lat2 - lat1) ** 2 + (lon2 - lon1) ** 2)
             distance *= 0.0048476868753
+            distance += correction
             # 构建图结构（无向图）
             graph.setdefault(start, {})[end] = distance
             graph.setdefault(end, {})[start] = distance
