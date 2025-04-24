@@ -1,12 +1,12 @@
 
 from PyQt5.QtCore import Qt, QPointF, QThreadPool, QRunnable
-from PyQt5.QtGui import QPixmap, QPen, QBrush, QColor, QFont
+from PyQt5.QtGui import QPixmap, QPen, QBrush, QColor, QFont, QPainter
 from PyQt5.QtWidgets import (
     QGraphicsView, QGraphicsScene, QGraphicsPixmapItem,
     QMessageBox, QGraphicsEllipseItem, QGraphicsLineItem
 )
 from algorithms.path_service import PathService
-from PyQt5.QtCore import QObject, QRunnable, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtWidgets import QTextEdit
 
 var_special_mode_active = 0
@@ -15,20 +15,18 @@ class PathSignals(QObject):
     finished = pyqtSignal(list)
 
 class PathWorker(QRunnable):
-    finished = pyqtSignal(list)
     def __init__(self, service: PathService, start_id: int, end_id: int):
         super().__init__()
-        self.signals = PathSignals()  # 信号封装在QObject中
+        self.signals = PathSignals()
         self.service = service
         self.start_id = start_id
         self.end_id = end_id
         self.path_coords = []
-        
 
     def run(self) -> None:
         """执行路径计算任务"""
         self.path_coords = self.service.calculate_path(self.start_id, self.end_id)
-        self.signals.finished.emit(self.path_coords)  # 通过QObject发射信号
+        self.signals.finished.emit(self.path_coords)
 
     def get_path_coords(self) -> list:
         return self.path_coords
@@ -43,17 +41,23 @@ class MapCanvas(QGraphicsView):
         self.map_pixmap = QGraphicsPixmapItem(QPixmap(map_path))
         self.scene.addItem(self.map_pixmap)
 
-        self.info_panel = None  # ← 新增：右侧显示面板
+        self.info_panel = None
+        # 初始化车祸标记
         self.accident_icon = QPixmap("data/car_crash.png")  # 确保图片路径正确
-        self.accident_marker = None
+        self.accident_marker = None 
+        
+        # 初始化暴雨标记
+        self.rain_icon = QPixmap("data/rain_cloud.png")  # 使用半透明积雨云图片
+        self.rain_marker = None
+        self.temp_marker = None  # 新增临时标记
 
         # 初始化路径服务
         self.path_service = PathService()
         self.thread_pool = QThreadPool.globalInstance()
 
         # 初始化状态变量
-        self.start_id: int | None = None
-        self.end_id: int | None = None
+        self.start_id = None
+        self.end_id = None
         self.path_lines = []
         self.click_enabled = True
         self.highlighted_node = None
@@ -61,7 +65,7 @@ class MapCanvas(QGraphicsView):
 
         # 连接信号槽
         self.path_service.calculation_failed.connect(self._show_error)
-        self.path_service.path_calculated.connect(self._draw_path)  # 新增连接
+        self.path_service.path_calculated.connect(self._draw_path)
 
         # 设置交互属性
         self.setMouseTracking(True)
@@ -75,66 +79,85 @@ class MapCanvas(QGraphicsView):
     # -------------------- 核心交互方法 --------------------
     def mousePressEvent(self, event) -> None:
         global var_special_mode_active
-        """鼠标点击事件处理"""
+        
+        # 处理常规路径选择（左键点击）
         if self.click_enabled and event.button() == Qt.LeftButton:
             scene_pos = self.mapToScene(event.pos())
             closest_id = self._get_closest_node(scene_pos)
-            print(
-                f"原始点击坐标：{event.pos().x()},{event.pos().y()} → 场景坐标：{scene_pos.x():.1f},{scene_pos.y():.1f}")
-            print(var_special_mode_active)
+            
+            # 普通模式下的节点选择
             if closest_id:
                 if not self.start_id:
                     self._handle_start_selection(closest_id, scene_pos)
                 else:
                     self._handle_end_selection(closest_id, scene_pos)
+        
+        # ================= 特殊模式处理 =================
+        # 暴雨模式（var_special_mode_active == 1）
         if var_special_mode_active == 1:
-            for item in self.scene.items():
-                if isinstance(item, QGraphicsEllipseItem) and item.pen().color() == QColor(255, 0, 0):
-                    self.scene.removeItem(item)
             scene_pos = self.mapToScene(event.pos())
-            redx = scene_pos.x()
-            redy = scene_pos.y()
-            redmarker = QGraphicsEllipseItem(redx - 150, redy - 150, 300, 300)
-            redmarker.setPen(QPen(QColor(254, 0, 0), 2))  # 红色高亮
-            self.scene.addItem(redmarker)
+            self._clear_temp_markers()
+            
+            # 创建半透明暴雨标记
+            scaled_icon = self.rain_icon.scaled(150, 150, 
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.SmoothTransformation
+            )
+            
+            # 设置50%透明度
+            transparent_icon = QPixmap(scaled_icon.size())
+            transparent_icon.fill(Qt.transparent)
+            painter = QPainter(transparent_icon)
+            painter.setOpacity(0.8)
+            painter.drawPixmap(0, 0, scaled_icon)
+            painter.end()
+            
+            # 添加标记到场景
+            self.rain_marker = QGraphicsPixmapItem(transparent_icon)
+            self.rain_marker.setOffset(-scaled_icon.width()/2, -scaled_icon.height()/2)
+            self.rain_marker.setPos(scene_pos)
+            self.scene.addItem(self.rain_marker)
+            
+            # 应用路径惩罚（中等影响）
+            self.path_service.apply_penalty_area(
+                (scene_pos.x(), scene_pos.y()),
+                radius=100,
+                penalty_factor=50.0
+            )
+            var_special_mode_active = 0  # 退出特殊模式
 
-            # 调用惩罚方法，增加该区域内的路径代价
-            self.path_service.apply_penalty_area((redx, redy), radius=150, penalty_factor=25.0)
-
-            var_special_mode_active = 0
-
+        # 车祸模式（var_special_mode_active == 2）
         elif var_special_mode_active == 2:
-            # 删除旧的红圈
-            for item in self.scene.items():
-                if isinstance(item, QGraphicsEllipseItem) and item.pen().color() == QColor(254, 0, 0):
-                    self.scene.removeItem(item)
-
-            # 转换鼠标位置为场景坐标
             scene_pos = self.mapToScene(event.pos())
-            redx = scene_pos.x()
-            redy = scene_pos.y()
-
-            # 缩放图片大小
-            scaled_icon = self.accident_icon.scaled(150, 150, Qt.AspectRatioMode.KeepAspectRatio)  # 调整为50x50大小，保持比例
-
-            # 创建新的图片标记
-            image_marker = QGraphicsPixmapItem(scaled_icon)
-            image_marker.setOffset(-scaled_icon.width() / 2, -scaled_icon.height() / 2)  # 确保图标居中
-            image_marker.setPos(redx, redy)
-            self.scene.addItem(image_marker)
-
-            # 调用惩罚方法，增加该区域内的路径代价
-            self.path_service.apply_penalty_area((redx, redy), radius=25, penalty_factor=1000.0)
-
-            # 关闭特殊模式
-            var_special_mode_active = 0
-
-    def mouseMoveEvent(self, event) -> None:
-        """鼠标移动事件处理"""
+            
+            # 清理旧标记
+            if self.accident_marker:
+                self.scene.removeItem(self.accident_marker)
+            
+            # 创建高可见度车祸标记
+            scaled_icon = self.accident_icon.scaled(150, 150,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.SmoothTransformation
+            )
+            
+            # 添加标记到场景（无需透明）
+            self.accident_marker = QGraphicsPixmapItem(scaled_icon)
+            self.accident_marker.setOffset(-scaled_icon.width()/2, -scaled_icon.height()/2)
+            self.accident_marker.setPos(scene_pos)
+            self.scene.addItem(self.accident_marker)
+            
+            # 应用强路径惩罚（完全避让）
+            self.path_service.apply_penalty_area(
+                (scene_pos.x(), scene_pos.y()),
+                radius=25,
+                penalty_factor=1000.0
+            )
+            var_special_mode_active = 0  # 退出特殊模式
+    def mouseMoveEvent(self, event):
         if self.click_enabled:
             scene_pos = self.mapToScene(event.pos())
             closest_id = self._get_closest_node(scene_pos)
-
+            # ...原有高亮逻辑保持不变...
             if closest_id:
                 if self.highlighted_node != closest_id:
                     if self.highlighted_marker:
@@ -147,39 +170,54 @@ class MapCanvas(QGraphicsView):
                     self.highlighted_node = None
                     self.highlighted_marker = None
 
+        # 暴雨模式移动效果
         if var_special_mode_active == 1:
-            # 先转换鼠标位置为场景坐标
+            self._clear_temp_markers()
             scene_pos = self.mapToScene(event.pos())
-            x = scene_pos.x()
-            y = scene_pos.y()
-
-            # 删除旧的红圈
-            for item in self.scene.items():
-                if isinstance(item, QGraphicsEllipseItem) and item.pen().color() == QColor(255, 0, 0):
-                    self.scene.removeItem(item)
-
-            # 创建新的红圈（以鼠标为中心）
-            redmarker = QGraphicsEllipseItem(x - 150, y - 150, 300, 300)
-            redmarker.setPen(QPen(QColor(255, 0, 0), 2))  # 红色高亮
-            self.scene.addItem(redmarker)
-
+            
+            # 创建半透明预览图标
+            scaled_icon = self.rain_icon.scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            painter = QPainter(scaled_icon)
+            painter.setCompositionMode(QPainter.CompositionMode_DestinationIn)
+            painter.fillRect(scaled_icon.rect(), QColor(0, 0, 0, 150))
+            painter.end()
+            
+            self.temp_marker = QGraphicsPixmapItem(scaled_icon)
+            self.temp_marker.setOffset(-scaled_icon.width()/2, -scaled_icon.height()/2)
+            self.temp_marker.setPos(scene_pos)
+            self.scene.addItem(self.temp_marker)
+        
         elif var_special_mode_active == 2:
             scene_pos = self.mapToScene(event.pos())
-            x = scene_pos.x()
-            y = scene_pos.y()
+            x, y = scene_pos.x(), scene_pos.y()
 
-            # 删除旧图标
+            # 清除旧标记
             if self.accident_marker:
                 self.scene.removeItem(self.accident_marker)
 
-            # 缩放图片大小
-            scaled_icon = self.accident_icon.scaled(150, 150, Qt.AspectRatioMode.KeepAspectRatio)  # 设置新大小为50x50，保持原始比例
-
-            # 创建新的车祸图标
+            # 创建新标记
+            scaled_icon = self.accident_icon.scaled(
+                150, 150, 
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.SmoothTransformation
+            )
+            
             self.accident_marker = QGraphicsPixmapItem(scaled_icon)
-            self.accident_marker.setOffset(-scaled_icon.width() / 2, -scaled_icon.height() / 2)  # 确保图标居中
+            self.accident_marker.setOffset(
+                -scaled_icon.width() / 2, 
+                -scaled_icon.height() / 2
+            )
             self.accident_marker.setPos(x, y)
             self.scene.addItem(self.accident_marker)
+
+    def _clear_temp_markers(self):
+        """清除临时标记"""
+        if self.temp_marker:
+            self.scene.removeItem(self.temp_marker)
+            self.temp_marker = None
+        # 保留已确认的暴雨标记
+
+    # ...保持其他方法不变...
 
     def _draw_highlighted_node(self, node_id: int):
         """绘制高亮节点标记"""
@@ -203,8 +241,7 @@ class MapCanvas(QGraphicsView):
         print(f"终点选择: 节点{node_id} @ ({pos.x():.1f}, {pos.y():.1f})")
         self.path_lines = self._start_calculation()
 
-
-
+    
     # -------------------- 路径计算相关 --------------------
     def _start_calculation(self) -> list:
         """启动后台计算任务"""
@@ -320,6 +357,21 @@ class MapCanvas(QGraphicsView):
         # self._draw_path(path_coords)
         # print("start_planning函数完成")
 
+    def add_simulated_rainstorm(self):
+        """启用暴雨模式"""
+        global var_special_mode_active
+        var_special_mode_active = 1
+        self.click_enabled = True
+
+    # def reset_selection(self):
+    #     """重置时清除所有标记"""
+    #     # ...原有逻辑...
+    #     # 清除暴雨相关标记
+    #     if self.rain_marker:
+    #         self.scene.removeItem(self.rain_marker)
+    #         self.rain_marker = None
+    #     self._clear_temp_markers()
+
     def reset_selection(self):
         """增强版重置方法"""
         self.start_id = None
@@ -328,7 +380,7 @@ class MapCanvas(QGraphicsView):
         global var_special_mode_active
         var_special_mode_active = 0
 
-        # 清除所有临时图形，包括车祸图标
+        # 清除所有临时图形，包括车祸图标, 暴雨图标, 路径线条
         for item in self.scene.items():
             if isinstance(item, (QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPixmapItem)):
                 self.scene.removeItem(item)
@@ -344,13 +396,6 @@ class MapCanvas(QGraphicsView):
 
         self.path_service.reset_penalty()
 
-    def add_simulated_rainstorm(self):
-        """放置暴雨点位"""
-        #设置车祸模式
-        global var_special_mode_active
-        var_special_mode_active = 1
-        self.click_enabled = True
-
     def add_simulated_carcrash(self):
         """放置车祸点位"""
         #设置车祸模式
@@ -359,23 +404,3 @@ class MapCanvas(QGraphicsView):
         self.click_enabled = True
 
 
-# -------------------- 测试代码 --------------------
-if __name__ == "__main__":
-    import sys
-    from PyQt5.QtWidgets import QApplication, QMainWindow
-
-
-    def test_app():
-        app = QApplication(sys.argv)
-        window = QMainWindow()
-
-        # 使用测试地图路径
-        canvas = MapCanvas("data/test_map.jpg")
-        window.setCentralWidget(canvas)
-        window.resize(800, 600)
-        window.show()
-
-        sys.exit(app.exec_())
-
-
-    test_app()
