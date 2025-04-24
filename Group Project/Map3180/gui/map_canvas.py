@@ -55,6 +55,15 @@ class MapCanvas(QGraphicsView):
         self.current_penalty_factor = 50.0  # 默认惩罚系数
         self.is_rain_active = False
 
+         # 新增箭头图标初始化
+        self.start_icon = QPixmap("data/start_arrow.png").scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.end_icon = QPixmap("data/end_arrow.png").scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.hover_icon = QPixmap("data/hover_arrow.png").scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        # 新增标记对象
+        self.hover_marker = None  # 鼠标悬停临时标记
+        self.start_marker = None  # 正式起点标记
+        self.end_marker = None 
+
         # 初始化路径服务
         self.path_service = PathService()
         self.thread_pool = QThreadPool.globalInstance()
@@ -291,29 +300,43 @@ class MapCanvas(QGraphicsView):
             self.scene.addItem(self.rain_marker)
     
     # ----------- 画节点 ---------------------- #
-
     def _draw_highlighted_node(self, node_id: int):
-        """绘制高亮节点标记"""
+        """替换原有高亮逻辑为箭头图标"""
+        # 移除旧的高亮标记
+        if self.hover_marker:
+            self.scene.removeItem(self.hover_marker)
+        
+        # 获取节点坐标
         x, y = self.path_service.nodes[node_id]
-        marker = QGraphicsEllipseItem(x - 8, y - 8, 16, 16)
-        marker.setPen(QPen(QColor(0, 255, 0), 2))  # 绿色高亮
-        marker.setBrush(QBrush(QColor(0, 255, 0, 100)))  # 半透明绿色填充
-        self.scene.addItem(marker)
-        return marker
+        
+        # 创建半透明悬停标记
+        transparent_icon = self.hover_icon.copy()
+        painter = QPainter(transparent_icon)
+        painter.setCompositionMode(QPainter.CompositionMode_DestinationIn)
+        painter.fillRect(transparent_icon.rect(), QColor(0,0,0,128))  # 50%透明度
+        painter.end()
+        
+        # 添加新标记
+        self.hover_marker = QGraphicsPixmapItem(transparent_icon)
+        self.hover_marker.setOffset(-transparent_icon.width()/2, -transparent_icon.height())  # 居中显示
+        self.hover_marker.setPos(x, y)
+        self.scene.addItem(self.hover_marker)
+        return self.hover_marker
 
     def _handle_start_selection(self, node_id: int, pos: QPointF) -> None:
-        """处理起点选择"""
+        """处理起点选择（新增图标）"""
+        # 移除旧标记
+        if self.start_marker:
+            self.scene.removeItem(self.start_marker)
+        
         self.start_id = node_id
-        self._draw_node_marker(node_id, Qt.blue)
+        # 创建新标记
+        x, y = self.path_service.nodes[node_id]
+        self.start_marker = QGraphicsPixmapItem(self.start_icon)
+        self.start_marker.setOffset(-self.start_icon.width()/2, -self.start_icon.height())
+        self.start_marker.setPos(x, y)
+        self.scene.addItem(self.start_marker)
         print(f"起点选择: 节点{node_id} @ ({pos.x():.1f}, {pos.y():.1f})")
-
-    def _handle_end_selection(self, node_id: int, pos: QPointF) -> None:
-        """处理终点选择"""
-        self.end_id = node_id
-        self._draw_node_marker(node_id, Qt.red)
-        print(f"终点选择: 节点{node_id} @ ({pos.x():.1f}, {pos.y():.1f})")
-        self.path_lines = self._start_calculation()
-
     
     # -------------------- 路径计算相关 --------------------
     def _start_calculation(self) -> list:
@@ -327,6 +350,24 @@ class MapCanvas(QGraphicsView):
         path_coords = worker.get_path_coords()
         print("计算完成", "path__coords: ", path_coords)
         return path_coords
+    
+    def _handle_end_selection(self, node_id: int, pos: QPointF) -> None:
+        """处理终点选择（新增图标）"""
+        # 移除旧标记
+        if self.end_marker:
+            self.scene.removeItem(self.end_marker)
+        
+        self.end_id = node_id
+        # 创建新标记
+        x, y = self.path_service.nodes[node_id]
+        self.end_marker = QGraphicsPixmapItem(self.end_icon)
+        self.end_marker.setOffset(-self.end_icon.width()/2, -self.end_icon.height())
+        self.end_marker.setPos(x, y)
+        self.scene.addItem(self.end_marker)
+
+        print(f"终点选择: 节点{node_id} @ ({pos.x():.1f}, {pos.y():.1f})")
+        self.path_lines = self._start_calculation()
+        self.path_completed = True  # 设置路径完成标志
 
     def _on_path_calculated(self, path_coords: list):
         """处理计算结果"""
@@ -390,14 +431,6 @@ class MapCanvas(QGraphicsView):
             )
 
     # -------------------- 辅助方法 --------------------
-    def _handle_end_selection(self, node_id: int, pos: QPointF) -> None:
-        """处理终点选择"""
-        self.end_id = node_id
-        self._draw_node_marker(node_id, Qt.red)
-        print(f"终点选择: 节点{node_id} @ ({pos.x():.1f}, {pos.y():.1f})")
-        self.path_lines = self._start_calculation()
-        self.path_completed = True  # 设置路径完成标志
-
     def _get_closest_node(self, pos: QPointF) -> int | None:
         """获取最近节点ID（带阈值检测）"""
         min_dist = float('inf')
@@ -435,8 +468,6 @@ class MapCanvas(QGraphicsView):
         self.path_lines = self._start_calculation()
         path_coords = self.path_lines.copy()
         print(f"路径规划结果: {path_coords}")
-        # self._draw_path(path_coords)
-        # print("start_planning函数完成")
 
     def add_simulated_rainstorm(self):
         """启用暴雨模式"""
@@ -453,6 +484,15 @@ class MapCanvas(QGraphicsView):
         self.click_enabled = True
         global var_special_mode_active
         var_special_mode_active = 0
+
+        """重置时清除所有箭头标记"""
+        # 新增清除起点、终点箭头逻辑
+        for marker in [self.hover_marker, self.start_marker, self.end_marker]:
+            if marker:
+                self.scene.removeItem(marker)
+        self.hover_marker = None
+        self.start_marker = None
+        self.end_marker = None
 
         # 清除所有临时图形，包括车祸图标, 暴雨图标, 路径线条
         for item in self.scene.items():
