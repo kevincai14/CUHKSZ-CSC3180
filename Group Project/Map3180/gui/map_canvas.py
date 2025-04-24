@@ -1,3 +1,4 @@
+# gui\map_canvas.py
 
 from PyQt5.QtCore import Qt, QPointF, QThreadPool, QRunnable
 from PyQt5.QtGui import QPixmap, QPen, QBrush, QColor, QFont, QPainter
@@ -50,6 +51,9 @@ class MapCanvas(QGraphicsView):
         self.rain_icon = QPixmap("data/rain_cloud.png")  # 使用半透明积雨云图片
         self.rain_marker = None
         self.temp_marker = None  # 新增临时标记
+        self.current_rain_radius = 100  # 默认影响半径
+        self.current_penalty_factor = 50.0  # 默认惩罚系数
+        self.is_rain_active = False
 
         # 初始化路径服务
         self.path_service = PathService()
@@ -97,46 +101,53 @@ class MapCanvas(QGraphicsView):
                     self._handle_end_selection(closest_id, scene_pos)
 
         # ================= 特殊模式处理 =================
-        # 暴雨模式（var_special_mode_active == 1）
-        elif var_special_mode_active == 1:
+        elif var_special_mode_active == 1 and event.button() == Qt.LeftButton:
             scene_pos = self.mapToScene(event.pos())
-            self._clear_temp_markers()
-
-            # 创建半透明暴雨标记
-            scaled_icon = self.rain_icon.scaled(150, 150,
-                                                Qt.AspectRatioMode.KeepAspectRatio,
-                                                Qt.SmoothTransformation
-                                                )
-
-            # 设置50%透明度
-            transparent_icon = QPixmap(scaled_icon.size())
-            transparent_icon.fill(Qt.transparent)
-            painter = QPainter(transparent_icon)
-            painter.setOpacity(0.8)
-            painter.drawPixmap(0, 0, scaled_icon)
+            
+            # 创建正式标记
+            scaled_icon = self.rain_icon.scaled(
+                int(self.current_rain_radius * 2),
+                int(self.current_rain_radius * 2),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.SmoothTransformation
+            )
+            
+            # 应用透明度
+            painter = QPainter(scaled_icon)
+            painter.setCompositionMode(QPainter.CompositionMode_DestinationIn)
+            painter.fillRect(scaled_icon.rect(), QColor(0, 0, 0, 150))
             painter.end()
-
-            # 添加标记到场景
-            self.rain_marker = QGraphicsPixmapItem(transparent_icon)
-            self.rain_marker.setOffset(-scaled_icon.width() / 2, -scaled_icon.height() / 2)
+            
+            # 添加正式标记
+            self.rain_marker = QGraphicsPixmapItem(scaled_icon)
+            self.rain_marker.setOffset(-scaled_icon.width()/2, -scaled_icon.height()/2)
             self.rain_marker.setPos(scene_pos)
             self.scene.addItem(self.rain_marker)
-
-            # 应用路径惩罚（中等影响）
+            
+            # 应用最终参数
             self.path_service.apply_penalty_area(
                 (scene_pos.x(), scene_pos.y()),
-                radius=100,
-                penalty_factor=50.0
+                radius=self.current_rain_radius,
+                penalty_factor=self.current_penalty_factor
             )
-            var_special_mode_active = 0  # 退出特殊模式
+            
+            # 退出特殊模式并重置
+            var_special_mode_active = 0
+            self._clear_temp_markers()
+            self.current_rain_radius = 100  # 重置默认值
+            self.current_penalty_factor = 50.0
+            
+            # 更新信息面板
+            if self.info_panel:
+                self.info_panel.append(f"⛈️ 暴雨区域已设置（半径：{self.current_rain_radius}px）")
+            
+            event.accept()
+            return
+
 
         # 车祸模式（var_special_mode_active == 2）
         elif var_special_mode_active == 2:
             scene_pos = self.mapToScene(event.pos())
-
-            # 清理旧标记
-            if self.accident_marker:
-                self.scene.removeItem(self.accident_marker)
 
             # 创建高可见度车祸标记
             scaled_icon = self.accident_icon.scaled(150, 150,
@@ -180,13 +191,24 @@ class MapCanvas(QGraphicsView):
             self._clear_temp_markers()
             scene_pos = self.mapToScene(event.pos())
             
-            # 创建半透明预览图标
-            scaled_icon = self.rain_icon.scaled(100, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            if self.temp_marker:
+                self.scene.removeItem(self.temp_marker)
+            
+            # 创建新尺寸图标
+            scaled_icon = self.rain_icon.scaled(
+                int(self.current_rain_radius * 2),
+                int(self.current_rain_radius * 2),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.SmoothTransformation
+            )
+            
+            # 应用透明度
             painter = QPainter(scaled_icon)
             painter.setCompositionMode(QPainter.CompositionMode_DestinationIn)
             painter.fillRect(scaled_icon.rect(), QColor(0, 0, 0, 150))
             painter.end()
             
+            # 创建新临时标记
             self.temp_marker = QGraphicsPixmapItem(scaled_icon)
             self.temp_marker.setOffset(-scaled_icon.width()/2, -scaled_icon.height()/2)
             self.temp_marker.setPos(scene_pos)
@@ -215,6 +237,25 @@ class MapCanvas(QGraphicsView):
             self.accident_marker.setPos(x, y)
             self.scene.addItem(self.accident_marker)
 
+    def wheelEvent(self, event):
+        """鼠标滚轮事件处理（完全重构）"""
+        global var_special_mode_active
+        
+        if var_special_mode_active == 1 and self.temp_marker:
+            # 计算缩放步长
+            delta = event.angleDelta().y() / 120
+            scale_factor = 1.1 if delta > 0 else 0.9
+            
+            # 更新参数（限制范围）
+            self.current_rain_radius = max(50, min(300, int(self.current_rain_radius * scale_factor)))
+            self.current_penalty_factor = max(10.0, min(200.0, self.current_penalty_factor * scale_factor))
+            
+            # 强制刷新临时标记
+            self.mouseMoveEvent(event)
+            event.accept()
+        else:
+            super().wheelEvent(event)
+
     def _clear_temp_markers(self):
         """清除临时标记"""
         if self.temp_marker:
@@ -222,7 +263,34 @@ class MapCanvas(QGraphicsView):
             self.temp_marker = None
         # 保留已确认的暴雨标记
 
-    # ...保持其他方法不变...
+    
+    def _update_rain_marker(self):
+        """更新暴雨标记显示"""
+        if self.rain_marker:
+            # 移除旧标记
+            self.scene.removeItem(self.rain_marker)
+            
+            # 创建新尺寸图标
+            scaled_icon = self.rain_icon.scaled(
+                int(self.current_rain_radius * 2),  # 直径=半径*2
+                int(self.current_rain_radius * 2),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.SmoothTransformation
+            )
+            
+            # 应用透明度
+            painter = QPainter(scaled_icon)
+            painter.setCompositionMode(QPainter.CompositionMode_DestinationIn)
+            painter.fillRect(scaled_icon.rect(), QColor(0, 0, 0, 150))
+            painter.end()
+            
+            # 重新创建标记
+            self.rain_marker = QGraphicsPixmapItem(scaled_icon)
+            self.rain_marker.setOffset(-scaled_icon.width()/2, -scaled_icon.height()/2)
+            self.rain_marker.setPos(self.rain_marker.pos())  # 保持原位置
+            self.scene.addItem(self.rain_marker)
+    
+    # ----------- 画节点 ---------------------- #
 
     def _draw_highlighted_node(self, node_id: int):
         """绘制高亮节点标记"""
@@ -376,14 +444,6 @@ class MapCanvas(QGraphicsView):
         var_special_mode_active = 1
         self.click_enabled = True
 
-    # def reset_selection(self):
-    #     """重置时清除所有标记"""
-    #     # ...原有逻辑...
-    #     # 清除暴雨相关标记
-    #     if self.rain_marker:
-    #         self.scene.removeItem(self.rain_marker)
-    #         self.rain_marker = None
-    #     self._clear_temp_markers()
 
     def reset_selection(self):
         """增强版重置方法"""
@@ -416,5 +476,4 @@ class MapCanvas(QGraphicsView):
         global var_special_mode_active
         var_special_mode_active = 2
         self.click_enabled = True
-
 
