@@ -62,6 +62,7 @@ class MapCanvas(QGraphicsView):
         self.click_enabled = True
         self.highlighted_node = None
         self.highlighted_marker = None
+        self.path_completed = False  # 新增标志位
 
         # 连接信号槽
         self.path_service.calculation_failed.connect(self._show_error)
@@ -79,31 +80,34 @@ class MapCanvas(QGraphicsView):
     # -------------------- 核心交互方法 --------------------
     def mousePressEvent(self, event) -> None:
         global var_special_mode_active
-        
-        # 处理常规路径选择（左键点击）
-        if self.click_enabled and event.button() == Qt.LeftButton:
+
+        # 如果路径已完成且不在特殊模式下，忽略点击
+        if self.path_completed and var_special_mode_active == 0:
+            return
+        # 在特殊模式下禁用常规的起点终点选择
+        if var_special_mode_active == 0 and self.click_enabled and event.button() == Qt.LeftButton:
             scene_pos = self.mapToScene(event.pos())
             closest_id = self._get_closest_node(scene_pos)
-            
+
             # 普通模式下的节点选择
             if closest_id:
                 if not self.start_id:
                     self._handle_start_selection(closest_id, scene_pos)
-                else:
+                elif not self.end_id:  # 只有在终点未设置时才处理
                     self._handle_end_selection(closest_id, scene_pos)
-        
+
         # ================= 特殊模式处理 =================
         # 暴雨模式（var_special_mode_active == 1）
-        if var_special_mode_active == 1:
+        elif var_special_mode_active == 1:
             scene_pos = self.mapToScene(event.pos())
             self._clear_temp_markers()
-            
+
             # 创建半透明暴雨标记
-            scaled_icon = self.rain_icon.scaled(150, 150, 
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.SmoothTransformation
-            )
-            
+            scaled_icon = self.rain_icon.scaled(150, 150,
+                                                Qt.AspectRatioMode.KeepAspectRatio,
+                                                Qt.SmoothTransformation
+                                                )
+
             # 设置50%透明度
             transparent_icon = QPixmap(scaled_icon.size())
             transparent_icon.fill(Qt.transparent)
@@ -111,13 +115,13 @@ class MapCanvas(QGraphicsView):
             painter.setOpacity(0.8)
             painter.drawPixmap(0, 0, scaled_icon)
             painter.end()
-            
+
             # 添加标记到场景
             self.rain_marker = QGraphicsPixmapItem(transparent_icon)
-            self.rain_marker.setOffset(-scaled_icon.width()/2, -scaled_icon.height()/2)
+            self.rain_marker.setOffset(-scaled_icon.width() / 2, -scaled_icon.height() / 2)
             self.rain_marker.setPos(scene_pos)
             self.scene.addItem(self.rain_marker)
-            
+
             # 应用路径惩罚（中等影响）
             self.path_service.apply_penalty_area(
                 (scene_pos.x(), scene_pos.y()),
@@ -129,23 +133,23 @@ class MapCanvas(QGraphicsView):
         # 车祸模式（var_special_mode_active == 2）
         elif var_special_mode_active == 2:
             scene_pos = self.mapToScene(event.pos())
-            
+
             # 清理旧标记
             if self.accident_marker:
                 self.scene.removeItem(self.accident_marker)
-            
+
             # 创建高可见度车祸标记
             scaled_icon = self.accident_icon.scaled(150, 150,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.SmoothTransformation
-            )
-            
+                                                    Qt.AspectRatioMode.KeepAspectRatio,
+                                                    Qt.SmoothTransformation
+                                                    )
+
             # 添加标记到场景（无需透明）
             self.accident_marker = QGraphicsPixmapItem(scaled_icon)
-            self.accident_marker.setOffset(-scaled_icon.width()/2, -scaled_icon.height()/2)
+            self.accident_marker.setOffset(-scaled_icon.width() / 2, -scaled_icon.height() / 2)
             self.accident_marker.setPos(scene_pos)
             self.scene.addItem(self.accident_marker)
-            
+
             # 应用强路径惩罚（完全避让）
             self.path_service.apply_penalty_area(
                 (scene_pos.x(), scene_pos.y()),
@@ -153,6 +157,7 @@ class MapCanvas(QGraphicsView):
                 penalty_factor=1000.0
             )
             var_special_mode_active = 0  # 退出特殊模式
+
     def mouseMoveEvent(self, event):
         if self.click_enabled:
             scene_pos = self.mapToScene(event.pos())
@@ -317,6 +322,14 @@ class MapCanvas(QGraphicsView):
             )
 
     # -------------------- 辅助方法 --------------------
+    def _handle_end_selection(self, node_id: int, pos: QPointF) -> None:
+        """处理终点选择"""
+        self.end_id = node_id
+        self._draw_node_marker(node_id, Qt.red)
+        print(f"终点选择: 节点{node_id} @ ({pos.x():.1f}, {pos.y():.1f})")
+        self.path_lines = self._start_calculation()
+        self.path_completed = True  # 设置路径完成标志
+
     def _get_closest_node(self, pos: QPointF) -> int | None:
         """获取最近节点ID（带阈值检测）"""
         min_dist = float('inf')
@@ -376,6 +389,7 @@ class MapCanvas(QGraphicsView):
         """增强版重置方法"""
         self.start_id = None
         self.end_id = None
+        self.path_completed = False  # 重置完成标志
         self.click_enabled = True
         global var_special_mode_active
         var_special_mode_active = 0
@@ -392,7 +406,7 @@ class MapCanvas(QGraphicsView):
 
         # 清空信息面板
         if hasattr(self, 'info_panel'):
-            self.info_panel.clear()  # 这个是清空面板的内容
+            self.info_panel.clear()
 
         self.path_service.reset_penalty()
 
