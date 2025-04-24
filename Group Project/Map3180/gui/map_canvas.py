@@ -100,6 +100,7 @@ class MapCanvas(QGraphicsView):
         # 在特殊模式下禁用常规的起点终点选择
         if var_special_mode_active == 0 and self.click_enabled and event.button() == Qt.LeftButton:
             scene_pos = self.mapToScene(event.pos())
+            print(f"Mouse clicked at: {scene_pos}")
             closest_id = self._get_closest_node(scene_pos)
 
             # 普通模式下的节点选择
