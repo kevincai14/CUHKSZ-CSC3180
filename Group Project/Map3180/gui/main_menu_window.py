@@ -33,7 +33,7 @@ class MainMenuWindow(QMainWindow):
         
         # 应用模糊处理
         painter = QPainter(scaled_pix)
-        for _ in range(8):  # 模糊强度
+        for _ in range(20):  # 模糊强度
             painter.drawPixmap(0, 0, scaled_pix)
         painter.end()
         
