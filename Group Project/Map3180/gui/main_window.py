@@ -14,7 +14,7 @@ class MainWindow(QMainWindow):
 
     def _init_ui(self, map_path: str):
         # 窗口基础设置
-        self.setWindowTitle("智能路径规划系统")
+        self.setWindowTitle("AI-Based Navigation System")
         self.resize(1800, 1800)
         self.setStyleSheet("background-color: #F5F5F5;")
 
@@ -116,10 +116,16 @@ class MainWindow(QMainWindow):
         btn_weather.clicked.connect(self._trigger_rainstorm)
         btn_weather.setStyleSheet(button_style)
 
+        # 最近加油站按钮
+        btn_nearest_station = QPushButton("Find Nearest Fuel Station")
+        btn_nearest_station.clicked.connect(self._find_nearest_station)
+        btn_nearest_station.setStyleSheet(button_style)
+
         # 添加按钮和弹性空间
         panel.addWidget(btn_reset)
         panel.addWidget(btn_crash)
         panel.addWidget(btn_weather)
+        panel.addWidget(btn_nearest_station)
         panel.addStretch(1)
 
         return panel
@@ -139,3 +145,9 @@ class MainWindow(QMainWindow):
         """恶劣天气模拟"""
         self.map_canvas.add_simulated_rainstorm()
         self.info_panel.append("⛈️ 暴雨天气模拟已激活")
+
+    def _find_nearest_station(self):
+        """寻找最近加油/充电站"""
+        self.map_canvas.add_simulated_station()
+        self.info_panel.append("寻找最近充电站模式已激活")
+

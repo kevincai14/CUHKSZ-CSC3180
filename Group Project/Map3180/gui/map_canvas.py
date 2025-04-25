@@ -61,6 +61,9 @@ class MapCanvas(QGraphicsView):
         self.current_penalty_factor = 50.0  # 默认惩罚系数
         self.is_rain_active = False
 
+        # 初始化充电站图标/id
+        self.gas_icon = QPixmap("data/charge_station.png").scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.gas_station_ids = [4, 23, 11, 46, 32, 52]
          # 新增箭头图标初始化
         self.start_icon = QPixmap("data/start_arrow.png").scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.end_icon = QPixmap("data/end_arrow.png").scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -110,7 +113,7 @@ class MapCanvas(QGraphicsView):
         if self.path_completed and var_special_mode_active == 0:
             return
         # 在特殊模式下禁用常规的起点终点选择
-        if var_special_mode_active == 0 and self.click_enabled and event.button() == Qt.LeftButton:
+        if (var_special_mode_active == 0 or var_special_mode_active == 3) and self.click_enabled and event.button() == Qt.LeftButton:
             scene_pos = self.mapToScene(event.pos())
             print(f"Mouse clicked at: {scene_pos}")
             closest_id = self._get_closest_node(scene_pos)
@@ -119,6 +122,9 @@ class MapCanvas(QGraphicsView):
             if closest_id:
                 if not self.start_id:
                     self._handle_start_selection(closest_id, scene_pos)
+                    if var_special_mode_active == 3:
+                        nearest_id = self.path_service.find_nearest_station(closest_id)
+                        self._handle_end_selection(nearest_id, scene_pos, True)
                 elif not self.end_id:  # 只有在终点未设置时才处理
                     self._handle_end_selection(closest_id, scene_pos)
 
@@ -259,6 +265,38 @@ class MapCanvas(QGraphicsView):
             self.accident_marker.setPos(x, y)
             self.scene.addItem(self.accident_marker)
 
+        elif var_special_mode_active == 3:
+
+            # 加油/充电站模式：高亮所有充电站节点
+            if not hasattr(self, 'station_markers_shown'):
+                self.station_markers_shown = False  # 标记是否已经显示过充电站图标
+
+            if not self.station_markers_shown:  # 只在第一次显示时执行
+                if not hasattr(self, 'gas_markers'):
+                    self.gas_markers = []
+                # 若已有标记，清除
+                for marker in self.gas_markers:
+                    self.scene.removeItem(marker)
+                self.gas_markers.clear()
+
+                # 遍历所有充电站节点
+                for node_id in self.gas_station_ids:
+                    if node_id in self.path_service.nodes:
+                        x, y = self.path_service.nodes[node_id]
+                        # 创建充电站图标（确保 self.gas_icon 已经加载）
+                        gas_marker = QGraphicsPixmapItem(self.gas_icon)
+                        gas_marker.setOffset(-self.gas_icon.width() / 2, -self.gas_icon.height())
+                        gas_marker.setPos(x, y)
+                        self.scene.addItem(gas_marker)
+
+                        # 添加到标记列表
+                        self.gas_markers.append(gas_marker)
+
+                # 标记图标已显示过，防止重复更改
+                self.station_markers_shown = True
+
+
+
     def wheelEvent(self, event):
         """鼠标滚轮事件处理（完全重构）"""
         global var_special_mode_active
@@ -364,19 +402,21 @@ class MapCanvas(QGraphicsView):
         print("计算完成", "path__coords: ", path_coords)
         return path_coords
     
-    def _handle_end_selection(self, node_id: int, pos: QPointF) -> None:
+    def _handle_end_selection(self, node_id: int, pos: QPointF, mode = False) -> None:
         """处理终点选择（新增图标）"""
         # 移除旧标记
         if self.end_marker:
             self.scene.removeItem(self.end_marker)
-        
+
         self.end_id = node_id
         # 创建新标记
         x, y = self.path_service.nodes[node_id]
         self.end_marker = QGraphicsPixmapItem(self.end_icon)
-        self.end_marker.setOffset(-self.end_icon.width()/2, -self.end_icon.height())
+        self.end_marker.setOffset(-self.end_icon.width() / 2, -self.end_icon.height())
         self.end_marker.setPos(x, y)
-        self.scene.addItem(self.end_marker)
+        if mode == False:
+            self.scene.addItem(self.end_marker)
+
 
         print(f"终点选择: 节点{node_id} @ ({pos.x():.1f}, {pos.y():.1f})")
         self.path_lines = self._start_calculation()
@@ -545,6 +585,7 @@ class MapCanvas(QGraphicsView):
             self.info_panel.clear()
 
         self.path_service.reset_penalty()
+        self.station_markers_shown = False
 
     def add_simulated_carcrash(self):
         """放置车祸点位"""
@@ -553,3 +594,9 @@ class MapCanvas(QGraphicsView):
         var_special_mode_active = 2
         self.click_enabled = True
 
+    def add_simulated_station(self):
+        """进入找加油站模式"""
+        #设置找加油站模式
+        global var_special_mode_active
+        var_special_mode_active = 3
+        self.click_enabled = True

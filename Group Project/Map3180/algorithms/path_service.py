@@ -5,6 +5,7 @@ from .q_learning import (
     q_learning, 
     extract_path
 )
+import math
 
 class PathService(QObject):
     path_calculated = pyqtSignal(list)
@@ -15,6 +16,7 @@ class PathService(QObject):
         self.nodes = None
         self.graph = None
         self.original_costs = {}  # 用来保存边的原始代价
+        self.station_ids = [4, 23, 11, 46, 32, 52]
 
     def initialize_data(self, node_file: str, edge_file: str):
         """初始化节点和边数据"""
@@ -51,6 +53,46 @@ class PathService(QObject):
 
         except Exception as e:
             self.calculation_failed.emit(str(e))
+
+    import math
+
+    def find_nearest_station(self, start_id: int) -> int:
+        """
+        使用经纬度坐标计算欧几里得距离寻找最近充电站
+        （基于 read_node_data() 返回的 {id: (lat, lon)} 格式）
+        """
+        if not self.nodes or start_id not in self.nodes:
+            raise ValueError("起点ID不存在或节点数据未加载")
+
+        # 获取起点经纬度
+        start_lat, start_lon = self.nodes[start_id]
+        min_distance = float('inf')
+        nearest_station_id = None
+
+        for station_id in self.station_ids:
+            try:
+                # 获取充电站经纬度
+                station_lat, station_lon = self.nodes[station_id]
+
+                # 计算简化版欧几里得距离（经纬度差值）
+                distance = math.sqrt((station_lat - start_lat) ** 2 +
+                                     (station_lon - start_lon) ** 2)
+
+
+                if distance < min_distance:
+                    min_distance = distance
+                    nearest_station_id = station_id
+
+            except KeyError:
+                print(f"⚠️ 忽略缺失坐标的充电站: {station_id}")
+            except Exception as e:
+                print(f"⚠️ 计算站 {station_id} 距离时出错: {str(e)}")
+
+        if nearest_station_id is None:
+            raise RuntimeError("所有充电站均不可用")
+
+        print(f"最近充电站: {station_id} (校准距离: {min_distance:.6f})")
+        return nearest_station_id
 
     def apply_penalty_area(self, center: tuple, radius: float, penalty_factor: float = 1000.0):
         """

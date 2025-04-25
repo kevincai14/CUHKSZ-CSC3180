@@ -11,8 +11,10 @@
   <component name="ChangeListManager">
     <list default="true" id="74b3ffa1-c22b-492c-810b-ec0d42c671ee" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Group Project/Map3180/data/edge_py_data.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Group Project/Map3180/data/edge_py_data.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Group Project/Map3180/data/node_py_data.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Group Project/Map3180/data/node_py_data.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Group Project/Map3180/algorithms/path_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/Group Project/Map3180/algorithms/path_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Group Project/Map3180/algorithms/q_learning.py" beforeDir="false" afterPath="$PROJECT_DIR$/Group Project/Map3180/algorithms/q_learning.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Group Project/Map3180/gui/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/Group Project/Map3180/gui/main_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Group Project/Map3180/gui/map_canvas.py" beforeDir="false" afterPath="$PROJECT_DIR$/Group Project/Map3180/gui/map_canvas.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -162,19 +164,30 @@
       <workItem from="1745429059140" duration="4455000" />
       <workItem from="1745476876132" duration="2065000" />
       <workItem from="1745485684405" duration="9482000" />
-      <workItem from="1745560674982" duration="2295000" />
+      <workItem from="1745560674982" duration="10340000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Group Project/Map3180/gui/map_canvas.py</url>
+          <line>2</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/CUHKSZ_CSC3180$python_RL_test.coverage" NAME="python_RL_test Coverage Results" MODIFIED="1745067389125" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Group Project" />
     <SUITE FILE_PATH="coverage/CUHKSZ_CSC3180$map_test.coverage" NAME="map_test Coverage Results" MODIFIED="1744365809028" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Group Project" />
     <SUITE FILE_PATH="coverage/CUHKSZ_CSC3180$q_learning.coverage" NAME="q_learning Coverage Results" MODIFIED="1745508155287" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Group Project/Map3180/algorithms" />
     <SUITE FILE_PATH="coverage/CUHKSZ_CSC3180$.coverage" NAME=" Coverage Results" MODIFIED="1745433207420" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Group Project/Map3180/gui" />
-    <SUITE FILE_PATH="coverage/CUHKSZ_CSC3180$main.coverage" NAME="main Coverage Results" MODIFIED="1745562969952" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Group Project/Map3180" />
+    <SUITE FILE_PATH="coverage/CUHKSZ_CSC3180$main.coverage" NAME="main Coverage Results" MODIFIED="1745570875439" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Group Project/Map3180" />
     <SUITE FILE_PATH="coverage/CUHKSZ_CSC3180$map_canvas.coverage" NAME="map_canvas Coverage Results" MODIFIED="1745506693123" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Group Project/Map3180/gui" />
     <SUITE FILE_PATH="coverage/CUHKSZ_CSC3180$test.coverage" NAME="test Coverage Results" MODIFIED="1744805395821" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Group Project" />
     <SUITE FILE_PATH="coverage/CUHKSZ_CSC3180$main_window.coverage" NAME="main_window Coverage Results" MODIFIED="1745384778024" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Group Project/Map3180/gui" />

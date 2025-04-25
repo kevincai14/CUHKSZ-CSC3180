@@ -30,9 +30,9 @@ def load_learning_config():
 params = load_learning_config()
 if not Flag:
     print("配置文件加载失败，使用默认参数")
-    alpha = 0.1
-    gamma = 0.9
-    epsilon = 0.3
+    alpha = 0.3
+    gamma = 0.95
+    epsilon = 0.5
     episodes = 2000
 else:
     alpha = params['alpha']
