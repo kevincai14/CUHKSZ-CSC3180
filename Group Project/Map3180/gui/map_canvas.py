@@ -167,7 +167,7 @@ class MapCanvas(QGraphicsView):
             
             # 更新信息面板
             if self.info_panel:
-                self.info_panel.append(f"⛈️ 暴雨区域已设置（半径：{self.current_rain_radius}px）")
+                self.info_panel.append(f"⛈️ Rainstorm is placed（radius：{self.current_rain_radius}px）")
             
             event.accept()
             return
@@ -523,7 +523,7 @@ class MapCanvas(QGraphicsView):
     def _show_error(self, msg: str) -> None:
         """显示错误信息"""
         self.set_loading_state(False)
-        QMessageBox.critical(self, "路径计算错误", f"错误详情：\n{msg}")
+        QMessageBox.critical(self, "Calculation Error", f"Details:\n{msg}")
         self.reset_selection()
 
     def start_path_planning(self, start_id: int, end_id: int):
@@ -600,3 +600,4 @@ class MapCanvas(QGraphicsView):
         global var_special_mode_active
         var_special_mode_active = 3
         self.click_enabled = True
+
