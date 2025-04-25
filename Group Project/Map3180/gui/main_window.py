@@ -32,7 +32,7 @@ class MainWindow(QMainWindow):
                 border: 2px solid #2196F3;
                 border-radius: 8px;
                 padding: 12px;
-                font-family: 'Microsoft YaHei';
+                font-family: 'Palatino Linotype';
                 font-size: 30px;
                 color: #333333;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
