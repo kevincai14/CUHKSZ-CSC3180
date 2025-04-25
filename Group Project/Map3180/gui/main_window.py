@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
         # 信息面板样式优化
         self.info_panel = QTextEdit()
         self.info_panel.setReadOnly(True)
-        self.info_panel.setFixedWidth(320)
+        self.info_panel.setFixedWidth(450)
         self.info_panel.setStyleSheet("""
             QTextEdit {
                 background-color: #FFFFFF;
@@ -33,7 +33,7 @@ class MainWindow(QMainWindow):
                 border-radius: 8px;
                 padding: 12px;
                 font-family: 'Microsoft YaHei';
-                font-size: 16px;
+                font-size: 30px;
                 color: #333333;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
@@ -134,20 +134,20 @@ class MainWindow(QMainWindow):
         """重置操作增强"""
         self.map_canvas.reset_selection()
         self.info_panel.clear()
-        self.info_panel.setPlainText("系统已重置\n等待新的路径规划...")
+        self.info_panel.setPlainText("System reset\nWaiting for new path planning...")
 
     def _car_crash(self):
         """交通事故模拟"""
         self.map_canvas.add_simulated_carcrash()
-        self.info_panel.append("⚠️ 交通事故模拟已激活")
+        self.info_panel.append("⚠️ Traffic accident simulation activated")
 
     def _trigger_rainstorm(self):
         """恶劣天气模拟"""
         self.map_canvas.add_simulated_rainstorm()
-        self.info_panel.append("⛈️ 暴雨天气模拟已激活")
+        self.info_panel.append("⛈️ Rainstorm simulation activated")
 
     def _find_nearest_station(self):
         """寻找最近加油/充电站"""
         self.map_canvas.add_simulated_station()
-        self.info_panel.append("寻找最近充电站模式已激活")
+        self.info_panel.append("Nearest charging station search mode activated")
 
