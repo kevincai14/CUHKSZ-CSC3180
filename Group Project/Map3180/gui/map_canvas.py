@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
     QGraphicsPathItem,  QTextEdit            # 新增阴影效果
 )
 from algorithms.path_service import PathService
-
+from math import atan2, degrees
 
 var_special_mode_active = 0
 
@@ -440,23 +440,22 @@ class MapCanvas(QGraphicsView):
         self.scene.addItem(marker)
 
     def _draw_path(self, path_coords: list):
-        """简化版路径绘制（仅虚线动画）"""
-        # 清除旧元素
+        """路径绘制函数（带完善的自然语言导航）"""
+        # 清除旧路径元素
         for item in self.path_lines:
             self.scene.removeItem(item)
         self.path_lines = []
         self.animation_offset = 0
 
+        # 绘制路径（原有代码保留）
         if len(path_coords) >= 2:
-            # 创建路径对象
             path = QPainterPath()
             path.moveTo(*path_coords[0])
             for coord in path_coords[1:]:
                 path.lineTo(*coord)
             
-            # 配置虚线样式
             path_item = QGraphicsPathItem(path)
-            pen = QPen(QColor(30, 144, 255), 4)  # 固定颜色
+            pen = QPen(QColor(30, 144, 255), 4)
             pen.setDashPattern([10, 5])
             pen.setCapStyle(Qt.RoundCap)
             pen.setDashOffset(self.animation_offset)
@@ -466,32 +465,121 @@ class MapCanvas(QGraphicsView):
             self.path_lines.append(path_item)
             self.animation_timer.start(50)
 
-        # ==== 更新信息面板 ====
+        # 生成导航指引
         if self.info_panel and self.path_service and len(path_coords) >= 2:
-            # 提取节点ID
-            node_ids = []
-            for coord in path_coords:
-                closest_node = min(
-                    self.path_service.nodes.items(),
-                    key=lambda item: (item[1][0]-coord[0])**2 + (item[1][1]-coord[1])**2
-                )
-                node_ids.append(str(closest_node[0]))
+            directions = []
+            current_dir = None
+            current_length = 0.0
+            total_length = 0.0
 
-            # 计算路径总长
-            total_length = sum(
-                self.path_service.graph[int(n1)].get(int(n2), 0)
-                for n1, n2 in zip(node_ids, node_ids[1:])
-            )
+            # 方向箭头映射表
+            DIRECTION_ARROWS = {
+                "north": "↑",
+                "northeast": "↗",
+                "east": "→",
+                "southeast": "↘",
+                "south": "↓",
+                "southwest": "↙",
+                "west": "←",
+                "northwest": "↖",
+                "ahead": "▲"
+            }
 
-            # 格式化输出
-            info_text = f"🚀 Path:\n{' → '.join(node_ids)}\n\n"
-            info_text += f"📏 Total Length: {total_length:.2f} km\n"
-            info_text += f"🔄 Segments: {len(node_ids)-1}"
+            # 直接处理所有路径段（包含起点到第一个节点）
+            for i in range(len(path_coords)-1):
+                start = path_coords[i]
+                end = path_coords[i+1]
+                
+                # 获取实际路径长度（千米单位）
+                segment_length = self._get_segment_length(start, end)
+                
+                # 计算方向
+                direction = self._get_direction(start, end)
+                print(f"Segment Length: {segment_length:.3f} km. Direction: {direction}")
+
+                # 格式化方向显示
+                arrow = DIRECTION_ARROWS.get(direction.lower(), "➤")
+                colored_dir = f'<font color="red">{direction.capitalize()}</font> {arrow}'
+                
+                # 合并连续相同方向
+                if direction == current_dir:
+                    current_length += segment_length
+                    directions[-1] = f"{colored_dir} for {current_length:.3f}km"
+
+                else:                
+                    # 方向不相同    
+                    current_dir = direction
+                    current_length = segment_length
+                    if current_dir is not None:
+                        directions.append(f"{colored_dir} for {current_length:.3f}km")
+                    else:# 第一次方向
+                        directions.append(f"{colored_dir} for {segment_length:.3f}km")
+                    current_dir = direction
+                    
+                total_length += segment_length
+
+            print(directions)
+
+            # 构建指引文本
+            instruction_html = "<b>🚀 Navigation Guidance:</b><br>"
+            steps = ["Start from departure point:"]
+            for i, d in enumerate(directions):
+                j = i + 1
+                steps.append(f"{j}. Go {d}")
+            steps.append(f"Arrive at destination!")
             
-            self.info_panel.setText(info_text)
+            instruction_html += "<br>".join(steps)
+
+            # 添加统计信息
+            instruction_html += f"<br><br><b>📊 Journey Summary:</b>"
+            instruction_html += f"<br>• Total distance: {total_length:.2f}km"
+            instruction_html += f"<br>• Number of segments: {len(directions)}"
+
+            self.info_panel.setHtml(instruction_html)
 
         self.set_loading_state(False)
-        print("路径绘制完成（带流动效果）")
+
+    def _get_segment_length(self, start, end):
+        """获取实际路径长度（千米单位）"""
+        # 查找最近节点
+        start_node = min(self.path_service.nodes.items(), 
+                        key=lambda item: (item[1][0]-start[0])**2 + (item[1][1]-start[1])**2)
+        end_node = min(self.path_service.nodes.items(),
+                    key=lambda item: (item[1][0]-end[0])**2 + (item[1][1]-end[1])**2)
+        
+        # 从图数据获取实际长度（单位：千米）
+        return self.path_service.graph[start_node[0]].get(end_node[0], 0.0)
+
+    def _get_direction(self, start, end):
+        """Calculate direction with precise node coordinates"""
+        dx = end[0] - start[0]
+        dy = start[1] - end[1]  # Inverted y-axis
+        
+        # Handle straight directions
+        if dx == 0:
+            return "north" if dy > 0 else "south"
+        if dy == 0:
+            return "east" if dx > 0 else "west"
+        
+        angle = degrees(atan2(dy, dx))
+        
+        # Detailed direction thresholds
+        if -12.5 <= angle < 12.5:
+            return "east"
+        elif 12.5 <= angle < 77.5:
+            return "northeast"
+        elif 77.5 <= angle < 102.5:
+            return "north"
+        elif 102.5 <= angle < 167.5:
+            return "northwest"
+        elif angle >= 167.5 or angle < -167.5:
+            return "west"
+        elif -167.5 <= angle < -102.5:
+            return "southwest"
+        elif -102.5 <= angle < -77.5:
+            return "south"
+        elif -77.5 <= angle < -12.5:
+            return "southeast"
 
     def _update_animation(self):
         """更新动画帧"""
@@ -600,4 +688,3 @@ class MapCanvas(QGraphicsView):
         global var_special_mode_active
         var_special_mode_active = 3
         self.click_enabled = True
-
