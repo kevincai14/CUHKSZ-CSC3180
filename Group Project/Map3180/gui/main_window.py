@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
         # 信息面板样式优化
         self.info_panel = QTextEdit()
         self.info_panel.setReadOnly(True)
-        self.info_panel.setFixedWidth(450)
+        self.info_panel.setFixedWidth(475)
         self.info_panel.setStyleSheet("""
             QTextEdit {
                 background-color: #FFFFFF;
